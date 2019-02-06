@@ -16,6 +16,8 @@ def read_data(csv_file, file_key, _protein=False, _hla=False):
             reader = csv.reader(file, delimiter='\t')
         elif file_key == 'tumor':
             reader = csv.reader(file, delimiter='\t')
+        elif file_key == 'nettcr':
+            reader = csv.reader(file, delimiter='\t')
         tcrs = set()
         peps = set()
         all_pairs = []
@@ -48,10 +50,15 @@ def read_data(csv_file, file_key, _protein=False, _hla=False):
                     continue
             elif file_key == 'tumor':
                 tcr, pep = line
+            elif file_key == 'nettcr':
+                tcr, pep = line[1], line[0]
+                # Klinger et al. removed C and F
+                tcr = 'C' + tcr + 'F'
             # Proper tcr and peptides
             if any(att == 'NA' or att == "" for att in [tcr, pep]):
                 continue
-            if any(key in tcr + pep for key in ['#', '*', 'b', 'f', 'y', '~', 'O', '/']):
+            if any(key in tcr + pep for key in ['#', '*', 'b', 'f', 'y', '~',
+                                                'O', '/', '1', 'X', '_', 'B', '7']):
                 continue
             tcrs.add(tcr)
             pep_data = [pep]
@@ -198,7 +205,7 @@ def get_examples(pairs_file, key, sampling, _protein=False, _hla=False):
 
 
 def load_data(pairs_file, key, sampling, _protein=False, _hla=False):
-    if key in ['mcpas', 'vdjdb', 'tumor']:
+    if key in ['mcpas', 'vdjdb', 'tumor', 'nettcr']:
         train_pos, train_neg, test_pos, test_neg = get_examples(pairs_file, key, sampling, _protein=_protein, _hla=_hla)
     elif key == 'united':
         mcpas_all_pairs, _, _ = read_data(pairs_file['mcpas'], 'mcpas', _protein=_protein, _hla=_hla)
@@ -239,3 +246,4 @@ def check(file, key, sampling):
 # check('tumor/extended_cancer_pairs', 'tumor', 'specific')
 # datafile = {'mcpas': r'data/McPAS-TCR.csv', 'vdjdb': r'data/VDJDB_complete.tsv'}
 # check(datafile, 'united', 'specific')
+# check('NetTCR/iedb_mira_pos_uniq', 'nettcr', 'specific')

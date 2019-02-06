@@ -90,12 +90,14 @@ def main(args):
     # Load data
     if args.dataset == 'mcpas':
         datafile = r'data/McPAS-TCR.csv'
-    if args.dataset == 'vdjdb':
+    elif args.dataset == 'vdjdb':
         datafile = r'data/VDJDB_complete.tsv'
-    if args.dataset == 'united':
+    elif args.dataset == 'united':
         datafile = {'mcpas': r'data/McPAS-TCR.csv', 'vdjdb': r'data/VDJDB_complete.tsv'}
-    if args.dataset == 'tumor':
+    elif args.dataset == 'tumor':
         datafile = r'tumor/extended_cancer_pairs'
+    elif args.dataset == 'nettcr':
+        datafile = r'NetTCR/iedb_mira_pos_uniq'
     train, test = ergo_data_loader.load_data(datafile, args.dataset, args.sampling,
                                              _protein=args.protein, _hla=args.hla)
     # Save train

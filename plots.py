@@ -6,7 +6,7 @@ import argparse
 import os
 import ergo_data_loader
 from scipy import stats
-
+from sklearn.metrics import roc_auc_score
 
 # Table 1 - SPB
 def spb_auc(args, peps):
@@ -279,6 +279,68 @@ def tcr_per_pep_dist():
     plt.show()
 
 
+def num_tcrs_bins_auc(args):
+    # for iteration
+    # predict all test
+    # count how many TCRs there are for every peptide in test data (including negatives)
+    # split peptides to bins by log TCR count , true + scores
+    # compute bin auc
+    # plot mean
+    dir = 'final_results'
+    mkeys = {'ae': 0, 'lstm': 1}
+    dkeys = {'mcpas': 0, 'vdjdb': 1}
+    signv = {'p': 1, 'n': 0}
+    iterations = 5
+    bin_aucs = np.zeros((2, 2, iterations, 15))
+    for model_type in mkeys.keys():
+        args.model_type = model_type
+        for dataset in dkeys.keys():
+            args.dataset = dataset
+            for iter in range(1, iterations + 1):
+                args.model_file = dir + '/' + '_'.join([model_type, dataset + str(iter) + '.pt'])
+                args.train_data_file = dir + '/' + '_'.join([model_type, dataset, 'train' + str(iter) + '.pickle'])
+                args.test_data_file = dir + '/' + '_'.join([model_type, dataset, 'test' + str(iter) + '.pickle'])
+                model, data = eval.load_model_and_data(args)
+                train_data, test_data = data
+                tcrs = [p[0] for p in test_data]
+                peps = [p[1][0] for p in test_data]
+                signs = [p[2] for p in test_data]
+                tcrs, peps, preds = eval.predict(args, model, tcrs, peps)
+                assert len(tcrs) == len(peps) == len(signs)
+                pep_probs = {pep: [] for pep in set(peps)}
+                for tcr, pep, pred, sign in zip(tcrs, peps, preds, signs):
+                    pep_probs[pep].append((pred, signv[sign]))
+                bins = {}
+                for pep in pep_probs:
+                    samples_count = len(pep_probs[pep])
+                    bin = int(np.floor(np.log2(samples_count)))
+                    try:
+                        bins[bin].extend(pep_probs[pep])
+                    except KeyError:
+                        bins[bin] = pep_probs[pep]
+                for bin in bins:
+                    try:
+                        auc = roc_auc_score([p[1] for p in bins[bin]], [p[0] for p in bins[bin]])
+                        bin_aucs[mkeys[model_type], dkeys[dataset], iter - 1, bin] = auc
+                    except ValueError:
+                        pass
+    bin_aucs = ma.array(bin_aucs, mask=bin_aucs == 0)
+    print(bin_aucs)
+    mean = np.mean(bin_aucs, axis=2)
+    sem = stats.sem(bin_aucs, axis=2)
+    xbins = range(2, 13)
+    plt.errorbar(xbins, mean[0, 0][2:13], yerr=sem[0, 0][2:13], label='AE, McPAS', color='royalblue', linestyle='-')
+    plt.errorbar(xbins, mean[0, 1][2:13], yerr=sem[0, 0][2:13], label='AE, VDJdb', color='tomato', linestyle='-')
+    plt.errorbar(xbins, mean[1, 0][2:13], yerr=sem[1, 0][2:13], label='LSTM, McPAS', color='royalblue', linestyle='--')
+    plt.errorbar(xbins, mean[1, 1][2:13], yerr=sem[1, 1][2:13], label='LSTM, VDJdb', color='tomato', linestyle='--')
+    plt.legend()
+    plt.title('AUC per number of TCRs per peptide')
+    plt.xlabel('Number of TCRs per peptide')
+    plt.xticks(xbins, [2 ** i for i in xbins])
+    plt.ylabel('Mean AUC')
+    plt.show()
+
+
 if __name__ == '__main__':
     dir = 'final_results'
     train_data_file = dir + '/' + 'ae_mcpas_train1.pickle'
@@ -326,4 +388,6 @@ if __name__ == '__main__':
         sub_auc()
     elif args.function == 'dist':
         tcr_per_pep_dist()
+    elif args.function == 'tcr_count_auc':
+        num_tcrs_bins_auc(args)
 
