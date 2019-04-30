@@ -1,10 +1,7 @@
 import torch
-import sys
-import numpy as np
 import torch.autograd as autograd
-import os
 import csv
-from prediction.ae_model import AutoencoderLSTMClassifier
+from ae_model import AutoencoderLSTMClassifier
 import sys
 
 
@@ -150,11 +147,10 @@ def predict(pairs_file, device, ae_file, model_file):
     return result_list
 
 
-def main(pairs_file):
-    results = predict(pairs_file, 'cuda:0', 'predict/tcr_autoencoder.pt', 'predict/ae_model.pt')
-    return results
-
-
 if __name__ == '__main__':
-    results = predict(sys.argv[1], 'cuda:0', 'tcr_autoencoder.pt', 'ae_model.pt')
+    pairs = sys.argv[1]
+    device = sys.argv[2]
+    tcr_autoencoder = sys.argv[3]
+    model = sys.argv[4]
+    results = predict(pairs, device, tcr_autoencoder, model)
     print(results)

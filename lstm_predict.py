@@ -1,8 +1,6 @@
 import torch
-import sys
-import numpy as np
 import torch.autograd as autograd
-from prediction.lstm_model import DoubleLSTMClassifier
+from lstm_model import DoubleLSTMClassifier
 import csv
 import sys
 
@@ -126,11 +124,9 @@ def predict(pairs_file, device, model_file):
     return result_list
 
 
-def main(pairs_file):
-    results = predict(pairs_file, 'cuda:0', 'predict/lstm_model.pt')
-    return results
-
-
 if __name__ == '__main__':
-    results = predict(sys.argv[1], 'cuda:0', 'lstm_model.pt')
+    pairs = sys.argv[1]
+    device = sys.argv[2]
+    model = sys.argv[3]
+    results = predict(pairs, device, model)
     print(results)

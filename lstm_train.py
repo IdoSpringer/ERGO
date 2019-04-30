@@ -1,20 +1,14 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-import sys
 from random import shuffle
 import time
 import numpy as np
 import torch.autograd as autograd
-from pair_sampling.new_models import SiameseLSTMClassifier, DoubleLSTMClassifier
-import pair_sampling.load_data as d
+from lstm_model import DoubleLSTMClassifier
+import load_data as d
 from sklearn.metrics import roc_auc_score, roc_curve
-import csv
 import sys
-from pair_sampling.new_train import *
-import load_with_tcrgp as d2
-import load_netTCR_data as d3
 
 
 def get_lists_from_pairs(pairs):
@@ -133,35 +127,27 @@ def train_model(batches, test_batches, device, args, params):
     best_auc = 0
     best_roc = None
     for epoch in range(params['epochs']):
-        print('epoch:', epoch + 1)
+        # print('epoch:', epoch + 1)
         epoch_time = time.time()
         # Train model and get loss
         loss = train_epoch(batches, model, loss_function, optimizer, device)
         losses.append(loss)
         # Compute auc
         train_auc = evaluate(model, batches, device)[0]
-        print('train auc:', train_auc)
-        with open(args['train_auc_file'], 'a+') as file:
-            file.write(str(train_auc) + '\n')
+        # print('train auc:', train_auc)
+        # with open(args['train_auc_file'], 'a+') as file:
+        #     file.write(str(train_auc) + '\n')
         if params['option'] == 2:
-            test_w, test_c = test_batches
-            test_auc_w = evaluate(model, test_w, device)
-            print('test auc w:', test_auc_w)
-            with open(args['test_auc_file_w'], 'a+') as file:
-                file.write(str(test_auc_w) + '\n')
-            test_auc_c = evaluate(model, test_c, device)
-            print('test auc c:', test_auc_c)
-            with open(args['test_auc_file_c'], 'a+') as file:
-                file.write(str(test_auc_c) + '\n')
+            pass
         else:
             test_auc, roc = evaluate(model, test_batches, device)
             if test_auc > best_auc:
                 best_auc = test_auc
                 best_roc = roc
-            print('test auc:', test_auc)
-            with open(args['test_auc_file'], 'a+') as file:
-                file.write(str(test_auc) + '\n')
-        print('one epoch time:', time.time() - epoch_time)
+            # print('test auc:', test_auc)
+            # with open(args['test_auc_file'], 'a+') as file:
+            #     file.write(str(test_auc) + '\n')
+        # print('one epoch time:', time.time() - epoch_time)
     return model, best_auc, best_roc
 
 
@@ -196,9 +182,9 @@ def main(argv):
     # Set all parameters and program arguments
     device = argv[2]
     args = {}
-    args['train_auc_file'] = argv[3]
-    args['test_auc_file'] = argv[4]
-    args['roc_file'] = argv[5]
+    # args['train_auc_file'] = argv[3]
+    # args['test_auc_file'] = argv[4]
+    # args['roc_file'] = argv[5]
     args['siamese'] = False
     params = {}
     params['lr'] = 1e-3
@@ -210,24 +196,8 @@ def main(argv):
     params['dropout'] = 0.1
     params['option'] = 0
     # Load data
-    pairs_file = 'pair_sampling/pairs_data/weizmann_pairs.txt'
-    if argv[-1] == 'cancer':
-        pairs_file = 'pair_sampling/pairs_data/cancer_pairs.txt'
-    if argv[-1] == 'shugay':
-        pairs_file = 'pair_sampling/pairs_data/shugay_pairs.txt'
-    if argv[-1] == 'ex_cancer':
-        pairs_file = 'extended_cancer_pairs.txt'
-    if argv[-1] == 'exs_cancer':
-        pairs_file = 'safe_extended_cancer_pairs.txt'
-    if argv[-1] == 'exnos_cancer':
-        pairs_file = 'no_shugay_extended_cancer_pairs.txt'
-
+    pairs_file = argv[3]
     train, test = d.load_data(pairs_file)
-    if argv[6] == 'tcrgp':
-        train, test = d2.load_data(pairs_file)
-    if argv[6] == 'nettcr':
-        pairs_file = 'netTCR/parameters/iedb_mira_pos_uniq.txt'
-        train, test = d3.load_data(pairs_file)
 
     # train
     train_tcrs, train_peps, train_signs = get_lists_from_pairs(train)
@@ -248,7 +218,7 @@ def main(argv):
                 'amino_to_ix': amino_to_ix
                 }, argv[1])
     # Save best ROC curve and AUC
-    np.savez(args['roc_file'], fpr=best_roc[0], tpr=best_roc[1], auc=np.array(best_auc))
+    # np.savez(args['roc_file'], fpr=best_roc[0], tpr=best_roc[1], auc=np.array(best_auc))
     pass
 
 

@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import sys
 from random import shuffle
-from autoencoder_model import PaddingAutoencoder
+from tcr_autoencoder import PaddingAutoencoder
 from sklearn.model_selection import train_test_split
 import os
 import csv
@@ -125,8 +125,8 @@ def evaluate(batches, batch_size, model, ix_to_amino, device):
         # model.zero_grad()
         pred = model(batch_size, padded_tcrs)
         pred_tcrs = read_pred(pred, ix_to_amino)
-        print('true:', true_tcrs)
-        print('pred:', pred_tcrs)
+        # print('true:', true_tcrs)
+        # print('pred:', pred_tcrs)
         for i in range(batch_size):
             count += 1
             mis = count_mistakes(true_tcrs[i], pred_tcrs[i])
@@ -134,7 +134,7 @@ def evaluate(batches, batch_size, model, ix_to_amino, device):
                 acc += 1
             if mis <= 1:
                 acc_1mis += 1
-            if mis <= 2:
+            # if mis <= 2:
                 acc_2mis += 1
             if mis <= 3:
                 acc_3mis += 1
@@ -143,15 +143,11 @@ def evaluate(batches, batch_size, model, ix_to_amino, device):
     acc_2mis /= count
     acc_3mis /= count
 
-    print('acc 0 mistakes:', acc)
-    print('acc up to 1 mistakes:', acc_1mis)
-    print('acc up to 2 mistakes:', acc_2mis)
-    print('acc up to 3 mistakes:', acc_3mis)
-    with open(sys.argv[3], 'a+') as file:
-        file.write('acc 0 mistakes: ' + str(acc) + '\n')
-        file.write('acc up to 1 mistakes: ' + str(acc_1mis) + '\n')
-        file.write('acc up to 2 mistakes: ' + str(acc_2mis) + '\n')
-        file.write('acc up to 3 mistakes: ' + str(acc_3mis) + '\n')
+    # with open(sys.argv[3], 'a+') as file:
+    #     file.write('acc 0 mistakes: ' + str(acc) + '\n')
+    #     file.write('acc up to 1 mistakes: ' + str(acc_1mis) + '\n')
+    #     file.write('acc up to 2 mistakes: ' + str(acc_2mis) + '\n')
+    #     file.write('acc up to 3 mistakes: ' + str(acc_3mis) + '\n')
 
 
 def main(argv):
@@ -176,12 +172,11 @@ def main(argv):
         'max_len': max_len,
         'enc_dim': encoding_dim,
         'model_state_dict': model.state_dict(),
-    }, argv[4])
+    }, argv[3])
 
 
 if __name__ == '__main__':
     main(sys.argv)
     # argv[1] = 'BM_data_CDR3s'
     # argv[2] = 'cuda:0'
-    # argv[3] = 'full_ae_accuracy.txt'
-    # argv[4] = 'tcr_autoencoder_model.pt'
+    # argv[3] = 'tcr_autoencoder_model.pt'
