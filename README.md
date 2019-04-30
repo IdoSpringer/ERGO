@@ -51,7 +51,7 @@ You can use the already trained `ae_model.pt` model instead.
 For prediction, we recommend using the [ERGO Website]() application.
 You can also use the relevant files in this repository.
 Data for prediction should be in .csv format as described in the website.
-See [this file]() for example.
+See [this file](https://github.com/IdoSpringer/ERGO/blob/master/pairs_example.csv) for example.
 
 #### LSTM Based Model
 For prediction, run:
