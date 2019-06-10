@@ -48,7 +48,7 @@ The trained autoencoder will be saved in `model_file` as a pytorch model.
 You can use the already trained `ae_model.pt` model instead.
 
 ### Prediction
-For prediction, we recommend using the [ERGO Website]() application.
+For prediction, we recommend using the [ERGO Website](https://u.cs.biu.ac.il/ergo/) application.
 You can also use the relevant files in this repository.
 Data for prediction should be in .csv format as described in the website.
 See [this file](https://github.com/IdoSpringer/ERGO/blob/master/pairs_example.csv) for example.
@@ -80,4 +80,4 @@ python ae_predict.py pairs_file device TCR_Autoencoder/tcr_autoencoder.pt ae_mod
 ```
 
 ### References
-[1] (...), High precision specific TCR-peptide binding prediction for repertoire based biomarkers, (...) .
+[1] I. Springer, H. Besser, N. Tickotsky-Moskovitz, S. Dvorkin, Y. Louzoun, Prediction of specific TCR-peptide binding from large dictionaries of TCR-peptide pairs. bioRxiv, 650861 (2019).
