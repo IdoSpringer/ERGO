@@ -163,7 +163,7 @@ def get_examples(pairs_file, key, sampling, _protein=False, _hla=False):
     train_pos = positive_examples(train_pairs)
     test_pos = positive_examples(test_pairs)
     if sampling == 'naive':
-        neg_train, neg_test = read_naive_negs('TCRGP/training_data')
+        neg_train, neg_test = read_naive_negs('tcrgp_training_data')
         train_neg = negative_external_examples(train_pairs, all_pairs, len(train_pos), neg_train, _protein=_protein)
         test_neg = negative_external_examples(test_pairs, all_pairs, len(test_pos), neg_train, _protein=_protein)
     elif sampling == 'memory':
