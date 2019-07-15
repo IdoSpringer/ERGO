@@ -8,18 +8,25 @@ numpy
 sklearn
 ```
 
-### Model Training
+All runs use the main ERGO.py file.
 
-#### LSTM Based Model
-The LSTM based model is built in the `lstm_model.py` file.
-For training the model, run:
+### Model Training
+For training the ERGO model, run:
 ```commandline
-python lstm_train.py model_file.pt device data_path
+python ERGO.py model_type dataset sampling device 
 ```
-when `device` is a CUDA GPU device (e.g. 'cuda:0') or 'cpu' for CPU device,
-and `data_path` is the path for the train + validation data (one file from data directory).
-The trained autoencoder will be saved in `model_file` as a pytorch model.
-You can use the already trained `lstm_model.pt` model instead.
+When: `model_type` is `ae` for the TCR-autoencoder based model, or `lstm` for the lstm based model.
+`dataset` is `mcpas` for McPAS-TCR dataset, or `vdjdb` for VDJdb dataset.
+`sampling` can be `specific` for distinguishing different binders, `naive` for separating non-binders and binders,
+or `memory` for distinguishing binders and memory TCRs.
+`device` is a CUDA GPU device (e.g. 'cuda:0') or 'cpu' for CPU device.
+
+Add the flag `--protein` suit the model for protein binding instead of specific peptide binding.
+Add the argument `--train_auc_file=file` to write down the model train AUC during training.
+Add the argument `--test_auc_file=file` to write down the model validation AUC during training.
+Add the argument `--model_file=file.pt` in order to save the trained model.
+Add the argument `--test_data_file=file.pickle` in order to save the test data.
+
 
 #### TCR Autoencoder
 The autoencoder based model requires a pre-trained TCR-autoencoder.
@@ -35,49 +42,26 @@ when `device` is a CUDA GPU device (e.g. 'cuda:0') or 'cpu' for CPU device.
 The trained autoencoder will be saved in `model_file` as a pytorch model.
 You can use the already trained `tcr_autoencoder.pt` model instead.
 
-#### Autoencoder Based Model
-The LSTM based model is built in the `ae_model.py` file.
-For training the model, run:
-```commandline
-python ae_train.py model_file.pt device tcr_autoencoder_path data_path
-```
-when `device` is a CUDA GPU device (e.g. 'cuda:0') or 'cpu' for CPU device,
-`tcr_autoencoder_path` is the trained tcr_autoencoder model file path,
-and `data_path` is the path for the train + validation data (one file from data directory).
-The trained autoencoder will be saved in `model_file` as a pytorch model.
-You can use the already trained `ae_model.pt` model instead.
+When you run the ERGO.py file, use the argument `--ae_file=trained_autoencoder_file`
 
-### Prediction
-For prediction, we recommend using the [ERGO Website]() application.
-You can also use the relevant files in this repository.
-Data for prediction should be in .csv format as described in the website.
-See [this file](https://github.com/IdoSpringer/ERGO/blob/master/pairs_example.csv) for example.
+### Specific peptides or proteins binding evaluation
+In order to evaluate the model for specific peptides or proteins,
+first change the ERGO.py file last lines, such that the `main(args)` call will be in comment,
+and the `pep_test(args)` or `protein_test(args) `  call will be active respectively.
 
-#### LSTM Based Model
-For prediction, run:
+Run:
 ```commandline
-python lstm_predict.py pairs_file device lstm_based_model_path
+python ERGO.py model_type dataset sampling device --model_file=file.pt --test_data_file=file.pickle
 ```
-when `pairs_file` is the data for prediction, 
-`device` is a CUDA GPU device (e.g. 'cuda:0') or 'cpu' for CPU device,
-and `lstm_based_model_path` is the trained tcr_autoencoder model file path.
-You can use the already trained models, by running
-```commandline
-python lstm_predict.py pairs_file device lstm_model.pt
-```
-#### Autoencoder Based Model
-For prediction, run:
-```commandline
-python ae_predict.py pairs_file device tcr_autoencoder_path autoencoder_based_model_path
-```
-when `pairs_file` is the data for prediction, 
-`device` is a CUDA GPU device (e.g. 'cuda:0') or 'cpu' for CPU device,
-`tcr_autoencoder_path` is the trained tcr_autoencoder model file path,
-and `autoencoder_based_model_path` is the trained autoencoder based model file path.
-You can use the already trained models, by running
-```commandline
-python ae_predict.py pairs_file device TCR_Autoencoder/tcr_autoencoder.pt ae_model.pt
-```
+When: `model_type` is `ae` for the TCR-autoencoder based model, or `lstm` for the lstm based model.
+`dataset` is `mcpas` for McPAS-TCR dataset, or `vdjdb` for VDJdb dataset.
+`sampling` can be `specific` for distinguishing different binders, `naive` for separating non-binders and binders,
+or `memory` for distinguishing binders and memory TCRs.
+`device` is a CUDA GPU device (e.g. 'cuda:0') or 'cpu' for CPU device.
+(All arguments same as the model which is now evaluated)
 
-### References
-[1] (...), High precision specific TCR-peptide binding prediction for repertoire based biomarkers, (...) .
+The argument `--model_file=file.pt` is the trained model to be evaluated.
+The argument `--test_data_file=file.pickle` is the test data (which the model has not seen during training,
+in order to do so please save it in the training run command).
+
+Add the flag `--protein` suit the model for protein binding instead of specific peptide binding.
