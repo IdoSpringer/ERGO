@@ -64,4 +64,4 @@ The argument `--model_file=file.pt` is the trained model to be evaluated.
 The argument `--test_data_file=file.pickle` is the test data (which the model has not seen during training,
 in order to do so please save it in the training run command).
 
-Add the flag `--protein` suit the model for protein binding instead of specific peptide binding.
+Add the flag `--protein` suit the model for protein binding instead of specific peptide binding. 
