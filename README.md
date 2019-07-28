@@ -64,4 +64,9 @@ The argument `--model_file=file.pt` is the trained model to be evaluated.
 The argument `--test_data_file=file.pickle` is the test data (which the model has not seen during training,
 in order to do so please save it in the training run command).
 
-Add the flag `--protein` suit the model for protein binding instead of specific peptide binding. 
+Add the flag `--protein` suit the model for protein binding instead of specific peptide binding.
+
+## References
+1. Springer, I., Besser, H., Tickotsky-Moskovitz, N., Dvorkin, S. & Louzoun, Y.
+Prediction of specific TCR-peptide binding from large dictionaries of TCR-peptide pairs.
+bioRxiv 650861 (2019). doi:10.1101/650861
