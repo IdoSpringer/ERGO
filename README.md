@@ -15,6 +15,7 @@ For initialization, download this repository or clone using
 `git clone https://github.com/IdoSpringer/ERGO`. It should take a few seconds.
 
 ### Model Training
+Training a model should take about an hour.
 All runs use the main ERGO.py file.
 
 For training the ERGO model, run:
@@ -96,6 +97,7 @@ If you want to run our example use `--test_data_file=auto`.
 
 The code should print the input TCRs and the peptides, with the predicted binding probabilities.
 Notice that in the autoencoder model, TCR max length is 28, so longer sequences will be ignored.
+Prediction should be take a few seconds.
 
 ## References
 1. Springer, I., Besser, H., Tickotsky-Moskovitz, N., Dvorkin, S. & Louzoun, Y.
