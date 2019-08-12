@@ -61,8 +61,8 @@ def main(args):
         arg['test_auc_file'] = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key])
     arg['ae_file'] = args.ae_file
     if args.ae_file == 'auto':
-        args.ae_file = 'pad_full_data_autoencoder_model1.pt'
-        arg['ae_file'] = 'pad_full_data_autoencoder_model1.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        arg['ae_file'] = 'TCR_Autoencoder/tcr_autoencoder.pt'
         pass
     arg['siamese'] = False
     params = {}
@@ -147,7 +147,7 @@ def pep_test(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'pad_full_data_autoencoder_model1.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
     if args.test_data_file == 'auto':
         dir = 'memory_and_protein'
         p_key = 'protein' if args.protein else ''
@@ -239,7 +239,7 @@ def protein_test(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'pad_full_data_autoencoder_model1.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
     if args.test_data_file == 'auto':
         dir = 'memory_and_protein'
         p_key = 'protein' if args.protein else ''
@@ -329,8 +329,75 @@ def protein_test(args):
     return rocs
 
 
+def predict(args):
+    # Word to index dictionary
+    amino_acids = [letter for letter in 'ARNDCEQGHILKMFPSTWYV']
+    if args.model_type == 'lstm':
+        amino_to_ix = {amino: index for index, amino in enumerate(['PAD'] + amino_acids)}
+    if args.model_type == 'ae':
+        pep_atox = {amino: index for index, amino in enumerate(['PAD'] + amino_acids)}
+        tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
+
+    if args.ae_file == 'auto':
+        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+    if args.model_file == 'auto':
+        dir = 'models'
+        p_key = 'protein' if args.protein else ''
+        args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
+    if args.test_data_file == 'auto':
+        args.test_data_file = 'pairs_example.csv'
+
+    # Read test data
+    tcrs = []
+    peps = []
+    signs = []
+    max_len = 28
+    with open(args.test_data_file, 'r') as csv_file:
+        reader = csv.reader(csv_file)
+        for line in reader:
+            tcr, pep = line
+            if args.model_type == 'ae' and len(tcr) >= max_len:
+                continue
+            tcrs.append(tcr)
+            peps.append(pep)
+            signs.append(0.0)
+    tcrs_copy = tcrs.copy()
+    peps_copy = peps.copy()
+
+    # Load model
+    device = args.device
+    if args.model_type == 'ae':
+        model = AutoencoderLSTMClassifier(10, device, 28, 21, 30, 50, args.ae_file, False)
+        checkpoint = torch.load(args.model_file, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.to(device)
+        model.eval()
+    if args.model_type == 'lstm':
+        model = DoubleLSTMClassifier(10, 30, 0.1, device)
+        checkpoint = torch.load(args.model_file, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.to(device)
+        model.eval()
+        pass
+
+    # Predict
+    batch_size = 50
+    if args.model_type == 'ae':
+        test_batches = ae.get_full_batches(tcrs, peps, signs, tcr_atox, pep_atox, batch_size, max_len)
+        preds = ae.predict(model, test_batches, device)
+    if args.model_type == 'lstm':
+        lstm.convert_data(tcrs, peps, amino_to_ix)
+        test_batches = lstm.get_full_batches(tcrs, peps, signs, batch_size, amino_to_ix)
+        preds = lstm.predict(model, test_batches, device)
+
+    # Print predictions
+    for tcr, pep, pred in zip(tcrs_copy, peps_copy, preds):
+        print('\t'.join([tcr, pep, str(pred)]))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("function")
     parser.add_argument("model_type")
     parser.add_argument("dataset")
     parser.add_argument("sampling")
@@ -345,6 +412,11 @@ if __name__ == '__main__':
     parser.add_argument("--test_data_file")
     args = parser.parse_args()
 
-    main(args)
-    # pep_test(args)
-    # protein_test(args)
+    if args.function == 'train':
+        main(args)
+    elif args.function == 'test' and not args.protein:
+        pep_test(args)
+    elif args.function == 'test' and args.protein:
+        protein_test(args)
+    elif args.function == 'predict':
+        predict(args)

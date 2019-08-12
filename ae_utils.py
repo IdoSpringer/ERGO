@@ -258,3 +258,26 @@ def evaluate_full(model, batches, device):
     auc = roc_auc_score(true, scores)
     fpr, tpr, thresholds = roc_curve(true, scores)
     return auc, (fpr, tpr, thresholds)
+
+
+def predict(model, batches, device):
+    model.eval()
+    preds = []
+    index = 0
+    for batch in batches:
+        tcrs, padded_peps, pep_lens, batch_signs = batch
+        # Move to GPU
+        tcrs = torch.tensor(tcrs).to(device)
+        padded_peps = padded_peps.to(device)
+        pep_lens = pep_lens.to(device)
+        probs = model(tcrs, padded_peps, pep_lens)
+        preds.extend([t[0] for t in probs.cpu().data.tolist()])
+        batch_size = len(tcrs)
+        index += batch_size
+    border = pep_lens[-1]
+    if any(k != border for k in pep_lens[border:]):
+        print(pep_lens)
+    else:
+        index -= batch_size - border
+        preds = preds[:index]
+    return preds
