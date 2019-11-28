@@ -1,3 +1,4 @@
+import nni
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -192,6 +193,9 @@ def train_model(batches, test_batches, device, args, params):
         with open(args['train_auc_file'], 'a+') as file:
             file.write(str(train_auc) + '\n')
         test_auc, roc = evaluate(model, test_batches, device)
+
+        # nni.report_intermediate_result(test_auc)
+
         if test_auc > best_auc:
             best_auc = test_auc
             best_roc = roc
