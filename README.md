@@ -40,18 +40,49 @@ Unseen TCRs AUC: **0.777**
 Unseen TCRs and peptides AUC: **None (bug)**
 
 ## Report 28.11.19 :red_car:
+### Weighted loss
+Since that the number of negative samples was equal to the number of positive examples,
+we were over-sampling frequent peptides.
+Now there are more negative examples than positive ones,
+so we multiply the loss of positive samples by a factor. 
+#### Results for LSTM, McPAS model (not so optimized)
+##### AUC Per peptide:
+Peptide | AUC
+--- | ---
+LPRRSGAAGA |	0.772
+GILGFVFTL |	0.806
+GLCTLVAML |	0.804
+NLVPMVATV |	0.800
+SSLENFRAYV |	0.925
+
+##### Multiclass peptide classification of unseen TCRs:
+Peptides |	Accuracy
+--- | ---
+LPRRSGAAGA+GILGFVFTL|	0.645
++GLCTLVAML|	0.523
++NLVPMVATV|	0.464
++SSLENFRAYV|	0.486
+
+Unseen pairs AUC: **0.860**
+
+Unseen TCRs AUC: **0.801**
+
+Unseen TCRs and peptides AUC: **0.511**
 ### Peptides list
 Our goal is to get SOTA results in the single peptide AUC evaluation.
 We would like to compare previous methods.
 
 Glanville peptides:
-* VTEHDTLLY
-* CTELKLSDY
-* NLVPMVATV
-* GLCTLVAML
-* GILGFVFTL
-* TPRVTGGGAM
-* LPRRSGAAGA
+
+Peptide | AUC
+--- | ---
+VTEHDTLLY| 0.792
+CTELKLSDY| none
+NLVPMVATV| 0.800
+GLCTLVAML| 0.804
+GILGFVFTL| 0.806
+TPRVTGGGAM| 0.786
+LPRRSGAAGA| 0.772
 
 Dash peptides (mentioned in TCRGP table):
 * GLCTLVAML

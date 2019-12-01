@@ -277,6 +277,15 @@ if __name__ == '__main__':
         print('\n' + 'Unseen peptides AUC:' + '\t' +
               str(new_peps_score(args, model, test_data, new_test_tcrs, new_test_peps)))
 
+        # Glanville peptides
+        glanville = ['VTEHDTLLY', 'CTELKLSDY', 'NLVPMVATV', 'GLCTLVAML', 'GILGFVFTL', 'TPRVTGGGAM', 'LPRRSGAAGA']
+        print('Glanville peptides, AUC per peptide:')
+        for pep in glanville:
+            try:
+                print(pep + '\t' + str(single_peptide_score(args, model, test_data, pep, None)))
+            except ValueError:
+                print(pep + '\t' + 'none')
+
     if args.function == 'load':
         model, data = load_model_and_data(args)
         train_data, test_data = data

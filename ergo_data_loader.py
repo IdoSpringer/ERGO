@@ -189,8 +189,8 @@ def get_examples(pairs_file, key, sampling, _protein=False, _hla=False):
         train_neg = negative_external_examples(train_pairs, all_pairs, len(train_pos), neg_train, _protein=_protein)
         test_neg = negative_external_examples(test_pairs, all_pairs, len(test_pos), neg_test, _protein=_protein)  # fixed to neg_test, was neg_train before
     elif sampling == 'specific':
-        train_neg = negative_examples(train_pairs, all_pairs, len(train_pos), _protein=_protein)
-        test_neg = negative_examples(test_pairs, all_pairs, len(test_pos), _protein=_protein)
+        train_neg = negative_examples(train_pairs, all_pairs, 5 * len(train_pos), _protein=_protein)
+        test_neg = negative_examples(test_pairs, all_pairs, 5 * len(test_pos), _protein=_protein)
     return train_pos, train_neg, test_pos, test_neg
 
 

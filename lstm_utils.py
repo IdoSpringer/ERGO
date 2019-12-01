@@ -133,6 +133,8 @@ def train_epoch(batches, model, loss_function, optimizer, device):
         probs = model(padded_tcrs, tcr_lens, padded_peps, pep_lens)
         # print(probs, batch_signs)
         # Compute loss
+        weights = batch_signs * 0.84 + (1-batch_signs) * 0.14
+        loss_function.weight = weights
         loss = loss_function(probs, batch_signs)
         # with open(sys.argv[1], 'a+') as loss_file:
         #    loss_file.write(str(loss.item()) + '\n')
