@@ -39,7 +39,7 @@ Unseen TCRs AUC: **0.777**
 
 Unseen TCRs and peptides AUC: **None (bug)**
 
-## Report 28.11.19 :red_car:
+## Report 1.12.19 :red_car:
 ### Weighted loss
 Since that the number of negative samples was equal to the number of positive examples,
 we were over-sampling frequent peptides.
@@ -63,7 +63,7 @@ LPRRSGAAGA+GILGFVFTL|	0.645
 +NLVPMVATV|	0.464
 +SSLENFRAYV|	0.486
 
-Unseen pairs AUC: **0.860**
+Unseen pairs AUC: **0.860** (train: **0.96**)
 
 Unseen TCRs AUC: **0.801**
 
