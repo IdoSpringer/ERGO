@@ -131,9 +131,10 @@ class AutoencoderLSTMClassifier(nn.Module):
         # RNN - LSTM
         self.pep_lstm = nn.LSTM(embedding_dim, self.lstm_dim, num_layers=2, batch_first=True, dropout=0.1)
         # MLP
-        self.hidden_layer = nn.Linear(self.lstm_dim * 2, self.lstm_dim)
+        self.mlp_dim = self.lstm_dim + encoding_dim
+        self.hidden_layer = nn.Linear(self.mlp_dim, self.mlp_dim // 2)
         self.relu = torch.nn.LeakyReLU()
-        self.output_layer = nn.Linear(self.lstm_dim, 1)
+        self.output_layer = nn.Linear(self.mlp_dim // 2, 1)
         self.dropout = nn.Dropout(p=0.1)
 
     def init_hidden(self, batch_size):

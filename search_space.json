@@ -1,8 +1,8 @@
 {
-    "lr":{"_type":"choice","_value":[0.0001, 0.001, 0.01, 0.1]},
-    "wd":{"_type":"choice","_value":[0, 0.00001, 0.0001, 0.001, 0.01]},
-    "lstm_dim":{"_type":"choice","_value":[10,30,50,100]},
-    "emb_dim":{"_type":"choice","_value":[5, 10]},
+    "lr":{"_type":"choice","_value":[0.0001, 0.001, 0.01]},
+    "wd":{"_type":"choice","_value":[0, 0.00001, 0.0001]},
+    "lstm_dim":{"_type":"choice","_value":[100, 200, 500, 1000]},
+    "emb_dim":{"_type":"choice","_value":[10]},
     "enc_dim":{"_type":"choice","_value":[30]},
     "dropout":{"_type":"choice","_value":[0.1, 0.5]}
 }

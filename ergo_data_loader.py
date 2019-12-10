@@ -4,7 +4,6 @@ import csv
 import os
 import sklearn.model_selection as skl
 
-# todo when we take naive, get also benny chain naives
 # todo count how many TCRs and peps there are in each set (for TN FN TP FP tables)
 
 

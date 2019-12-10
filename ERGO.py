@@ -56,43 +56,54 @@ def main(args):
     arg['train_auc_file'] = args.train_auc_file if args.train_auc_file else 'ignore'
     arg['test_auc_file'] = args.test_auc_file if args.test_auc_file else 'ignore'
     if args.test_auc_file == 'auto':
-        dir = 'memory_and_protein'
+        dir = 'save_results'
         p_key = 'protein' if args.protein else ''
         arg['test_auc_file'] = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key])
     arg['ae_file'] = args.ae_file
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
-        arg['ae_file'] = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
+        arg['ae_file'] = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
         pass
     arg['siamese'] = False
     params = {}
-    params['lr'] = 1e-3
-    params['wd'] = 1e-5
-    params['epochs'] = 200
+    params['lr'] = 1e-4
+    params['wd'] = 0
+    params['epochs'] = 100
     params['batch_size'] = 50
-    params['lstm_dim'] = 30
+    params['lstm_dim'] = 500
     params['emb_dim'] = 10
     params['dropout'] = 0.1
     params['option'] = 0
-    params['enc_dim'] = 30
+    params['enc_dim'] = 100
     params['train_ae'] = True
 
     # Load autoencoder params
     if args.model_type == 'ae':
-        checkpoint = torch.load(args.ae_file)
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_' + str(params['enc_dim']) + '.pt'
+        arg['ae_file'] = args.ae_file
+        checkpoint = torch.load(args.ae_file, map_location=args.device)
         params['max_len'] = checkpoint['max_len']
         params['batch_size'] = checkpoint['batch_size']
 
     # Load data
     if args.dataset == 'mcpas':
-        datafile = 'data/McPAS-TCR.csv'
+        datafile = r'data/McPAS-TCR.csv'
     if args.dataset == 'vdjdb':
-        datafile = 'data/VDJDB_complete.tsv'
+        datafile = r'data/VDJDB_complete.tsv'
     train, test = ergo_data_loader.load_data(datafile, args.dataset, args.sampling,
                                              _protein=args.protein, _hla=args.hla)
+    # Save train
+    if args.train_data_file == 'auto':
+        dir = 'save_results'
+        p_key = 'protein' if args.protein else ''
+        args.train_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'train'])
+    if args.train_data_file:
+        with open(args.train_data_file + '.pickle', 'wb') as handle:
+            pickle.dump(train, handle)
+
     # Save test
     if args.test_data_file == 'auto':
-        dir = 'memory_and_protein'
+        dir = 'save_results'
         p_key = 'protein' if args.protein else ''
         args.test_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'test'])
     if args.test_data_file:
@@ -124,12 +135,13 @@ def main(args):
 
     # Save trained model
     if args.model_file == 'auto':
-        dir = 'memory_and_protein'
+        dir = 'save_results'
         p_key = 'protein' if args.protein else ''
         args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
     if args.model_file:
         torch.save({
                     'model_state_dict': model.state_dict(),
+                    'params': params
                     }, args.model_file)
     if args.roc_file:
         # Save best ROC curve and AUC
@@ -147,13 +159,13 @@ def pep_test(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.test_data_file == 'auto':
-        dir = 'memory_and_protein'
+        dir = 'save_results'
         p_key = 'protein' if args.protein else ''
         args.test_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'test.pickle'])
     if args.model_file == 'auto':
-        dir = 'memory_and_protein'
+        dir = 'save_results'
         p_key = 'protein' if args.protein else ''
         args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
 
@@ -239,13 +251,13 @@ def protein_test(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.test_data_file == 'auto':
-        dir = 'memory_and_protein'
+        dir = 'save_results'
         p_key = 'protein' if args.protein else ''
         args.test_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'test.pickle'])
     if args.model_file == 'auto':
-        dir = 'memory_and_protein'
+        dir = 'save_results'
         p_key = 'protein' if args.protein else ''
         args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
 
@@ -339,7 +351,7 @@ def predict(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.model_file == 'auto':
         dir = 'models'
         p_key = 'protein' if args.protein else ''
@@ -409,6 +421,7 @@ if __name__ == '__main__':
     parser.add_argument("--test_auc_file")
     parser.add_argument("--model_file")
     parser.add_argument("--roc_file")
+    parser.add_argument("--train_data_file")
     parser.add_argument("--test_data_file")
     args = parser.parse_args()
 
@@ -420,3 +433,5 @@ if __name__ == '__main__':
         protein_test(args)
     elif args.function == 'predict':
         predict(args)
+
+#  python ERGO.py train lstm mcpas specific cuda:0 --model_file=model.pt --train_data_file=train_data --test_data_file=test_data

@@ -161,7 +161,7 @@ def main(argv):
     train_batches = get_batches(train, amino_to_ix, batch_size, max_len)
     test_batches = get_batches(test, amino_to_ix, batch_size, max_len)
     device = argv[2] if torch.cuda.is_available() else 'cpu'
-    encoding_dim = 30
+    encoding_dim = int(argv[4])
     model = train_model(train_batches, batch_size, max_len, encoding_dim=encoding_dim,
                         epochs=300, device=device)
     evaluate(test_batches, batch_size, model, ix_to_amino, device)
@@ -180,3 +180,5 @@ if __name__ == '__main__':
     # argv[1] = 'BM_data_CDR3s'
     # argv[2] = 'cuda:0'
     # argv[3] = 'tcr_autoencoder_model.pt'
+    # argv[4] = 30
+

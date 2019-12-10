@@ -53,18 +53,24 @@ def load_model_and_data(args):
         p_key = 'protein' if args.protein else ''
         args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
 
-    enc_dim = 30
+    # enc_dim = 30
     # Load model
     device = args.device
     if args.model_type == 'ae':
-        model = AutoencoderLSTMClassifier(10, device, 28, 21, enc_dim, 50, args.ae_file, False)
         checkpoint = torch.load(args.model_file, map_location=device)
+        params = checkpoint['params']
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_' + str(params['enc_dim']) + '.pt'
+        model = AutoencoderLSTMClassifier(params['emb_dim'],
+                                          device, 28, 21,
+                                          params['enc_dim'],
+                                          params['batch_size'], args.ae_file, False)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.to(device)
         model.eval()
     if args.model_type == 'lstm':
-        model = DoubleLSTMClassifier(10, 30, 0.1, device)
         checkpoint = torch.load(args.model_file, map_location=device)
+        params = checkpoint['params']
+        model = DoubleLSTMClassifier(params['emb_dim'], params['lstm_dim'], params['dropout'], device)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.to(device)
         model.eval()
@@ -230,12 +236,7 @@ def new_peps_score(args, model, test_data, new_tcrs, new_peps):
     return evaluate(args, model, tcrs, peps, signs)
 
 
-# todo save also train data and train a toy model for evaluation            V
-# todo implement evaluation methods                                         V
-# todo make sure that predictions are not only for floor(batch size)        V
-# todo check for scores. what is good? what is bad? what is missing data? how could it be solved?
 # todo fix code. remove repeating parts
-# todo one function to test them all (main)
 # todo hyperparameters tuning with NNI. only 4 models - AE/LSTM * McPAS/VDJdb
 # todo average of 10 models. Not cross-validation, but close enough
 
@@ -291,4 +292,6 @@ if __name__ == '__main__':
         train_data, test_data = data
         pass
 
+
 # python evaluation_methods.py load lstm mcpas specific cuda:1 --model_file=auto --train_data_file=auto --test_data_file=auto
+

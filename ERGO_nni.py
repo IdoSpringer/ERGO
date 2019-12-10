@@ -3,8 +3,8 @@ import nni
 import torch
 import pickle
 import argparse
-import ae_utils as ae
-import lstm_utils as lstm
+import ae_nni as ae
+import lstm_nni as lstm
 import ergo_data_loader
 import numpy as np
 from ERGO_models import AutoencoderLSTMClassifier, DoubleLSTMClassifier
@@ -65,14 +65,14 @@ def main(args):
         arg['test_auc_file'] = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key])
     arg['ae_file'] = args.ae_file
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
-        arg['ae_file'] = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
+        arg['ae_file'] = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
         pass
     arg['siamese'] = False
     params = {}
     params['lr'] = 1e-3
     params['wd'] = 1e-5
-    params['epochs'] = 200
+    params['epochs'] = 75
     params['batch_size'] = 50
     params['lstm_dim'] = 30
     params['emb_dim'] = 10
@@ -84,25 +84,27 @@ def main(args):
     # with open('nni_my_log', 'a+') as file:
     #    file.write('---2---' + '\n')
 
-    '''
+
     nni_params = nni.get_next_parameter()
     with open('nni_my_log', 'a+') as file:
         file.write(str(nni_params) + '\n')
     print(nni_params)
-    nni.report_intermediate_result(0)
+    nni.report_intermediate_result(0.5)
     params['lr'] = float(nni_params['lr'])
     params['wd'] = float(nni_params['wd'])
     params['lstm_dim'] = int(nni_params['lstm_dim'])
     params['emb_dim'] = int(nni_params['emb_dim'])
     params['enc_dim'] = int(nni_params['enc_dim'])
     params['dropout'] = float(nni_params['dropout'])
-    '''
+
 
     # with open('nni_my_log', 'a+') as file:
     #    file.write('---3---' + '\n')
 
     # Load autoencoder params
     if args.model_type == 'ae':
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_' + str(params['enc_dim']) + '.pt'
+        arg['ae_file'] = args.ae_file
         checkpoint = torch.load(args.ae_file, map_location=args.device)
         params['max_len'] = checkpoint['max_len']
         params['batch_size'] = checkpoint['batch_size']
@@ -159,7 +161,7 @@ def main(args):
         model, best_auc, best_roc = lstm.train_model(train_batches, test_batches, args.device, arg, params)
         pass
 
-    # nni.report_final_result(best_auc)
+    nni.report_final_result(best_auc)
 
     # Save trained model
     if args.model_file == 'auto':
@@ -186,7 +188,7 @@ def pep_test(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.test_data_file == 'auto':
         dir = 'save_results'
         p_key = 'protein' if args.protein else ''
@@ -278,7 +280,7 @@ def protein_test(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.test_data_file == 'auto':
         dir = 'save_results'
         p_key = 'protein' if args.protein else ''
@@ -378,7 +380,7 @@ def predict(args):
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
     if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_autoencoder.pt'
+        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.model_file == 'auto':
         dir = 'models'
         p_key = 'protein' if args.protein else ''
