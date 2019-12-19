@@ -45,7 +45,7 @@ def read_data(csv_file, file_key, _protein=False, _hla=False):
                 if line[1] != 'TRB':
                     continue
             # Proper tcr and peptides
-            if any(att == 'NA' for att in [tcr, pep]):
+            if any(att == 'NA' or att == "" for att in [tcr, pep]):
                 continue
             if any(key in tcr + pep for key in ['#', '*', 'b', 'f', 'y', '~', 'O', '/']):
                 continue

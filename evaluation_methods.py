@@ -152,7 +152,7 @@ def single_peptide_score(args, model, test_data, pep, neg_type=None):
         lstm.convert_data(tcrs, peps, amino_to_ix)
         test_batches = lstm.get_full_batches(tcrs, peps, signs, batch_size, amino_to_ix)
         test_auc, roc = lstm.evaluate_full(model, test_batches, args.device)
-    return test_auc
+    return test_auc, roc
 
 
 def multi_peptide_score(args, model, test_data, new_tcrs, number_of_peps):
@@ -204,12 +204,12 @@ def evaluate(args, model, tcrs, peps, signs):
     # Predict
     if args.model_type == 'ae':
         test_batches = ae.get_full_batches(tcrs, peps, signs, tcr_atox, pep_atox, batch_size, max_len)
-        auc, _ = ae.evaluate_full(model, test_batches, args.device)
+        auc, roc = ae.evaluate_full(model, test_batches, args.device)
     if args.model_type == 'lstm':
         lstm.convert_data(tcrs, peps, amino_to_ix)
         test_batches = lstm.get_full_batches(tcrs, peps, signs, batch_size, amino_to_ix)
-        auc, _ = lstm.evaluate_full(model, test_batches, args.device)
-    return auc
+        auc, roc = lstm.evaluate_full(model, test_batches, args.device)
+    return auc, roc
 
 
 def new_pairs_score(args, model, test_data):
@@ -263,27 +263,27 @@ if __name__ == '__main__':
         # 1 Per peptide
         print('AUC per peptide:')
         for pep in most_freq:
-            print(pep + '\t' + str(single_peptide_score(args, model, test_data, pep, None)))
+            print(pep + '\t' + str(single_peptide_score(args, model, test_data, pep, None)[0]))
         # 2 Multiclass peptides, New TCRs
         print('\n' + 'Multiclass peptide classification accuracy:')
         for i in range(2, len(most_freq) + 1):
             print(str([most_freq[:i]]) + '\t' + str(accs[i-2]))
         # 3 Original question
         print('\n' + 'Unseen pairs AUC (original test):' + '\t' +
-              str(new_pairs_score(args, model, test_data)))
+              str(new_pairs_score(args, model, test_data)[0]))
         # 4 New TCRs
         print('\n' + 'Unseen TCRs AUC:' + '\t' +
-              str(new_tcrs_score(args, model, test_data, new_test_tcrs)))
+              str(new_tcrs_score(args, model, test_data, new_test_tcrs)[0]))
         # 5 New peptides
         print('\n' + 'Unseen peptides AUC:' + '\t' +
-              str(new_peps_score(args, model, test_data, new_test_tcrs, new_test_peps)))
+              str(new_peps_score(args, model, test_data, new_test_tcrs, new_test_peps)[0]))
 
         # Glanville peptides
         glanville = ['VTEHDTLLY', 'CTELKLSDY', 'NLVPMVATV', 'GLCTLVAML', 'GILGFVFTL', 'TPRVTGGGAM', 'LPRRSGAAGA']
         print('Glanville peptides, AUC per peptide:')
         for pep in glanville:
             try:
-                print(pep + '\t' + str(single_peptide_score(args, model, test_data, pep, None)))
+                print(pep + '\t' + str(single_peptide_score(args, model, test_data, pep, None)[0]))
             except ValueError:
                 print(pep + '\t' + 'none')
 
