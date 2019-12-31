@@ -120,7 +120,7 @@ class AutoencoderLSTMClassifier(nn.Module):
         self.batch_size = batch_size
         # TCR Autoencoder
         self.autoencoder = PaddingAutoencoder(max_len, input_dim, encoding_dim)
-        checkpoint = torch.load(ae_file)
+        checkpoint = torch.load(ae_file, map_location=device)
         self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
         if train_ae is False:
             for param in self.autoencoder.parameters():

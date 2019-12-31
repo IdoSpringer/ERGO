@@ -235,10 +235,7 @@ def new_peps_score(args, model, test_data, new_tcrs, new_peps):
     signs = [signs_to_prob[p[2]] for p in test_data if p[0] in new_tcrs and p[1][0] in new_peps]
     return evaluate(args, model, tcrs, peps, signs)
 
-
 # todo fix code. remove repeating parts
-# todo hyperparameters tuning with NNI. only 4 models - AE/LSTM * McPAS/VDJdb
-# todo average of 10 models. Not cross-validation, but close enough
 
 
 if __name__ == '__main__':
@@ -286,8 +283,7 @@ if __name__ == '__main__':
                 print(pep + '\t' + str(single_peptide_score(args, model, test_data, pep, None)[0]))
             except ValueError:
                 print(pep + '\t' + 'none')
-
-    if args.function == 'load':
+    elif args.function == 'load':
         model, data = load_model_and_data(args)
         train_data, test_data = data
         pass
