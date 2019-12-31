@@ -137,67 +137,6 @@ def max_auc(auc_file):
     return max_auc
 
 
-def position_auc():
-    dir = 'mis_pos/mis_pos_auc'
-    mkeys = {'ae': 0, 'lstm': 1}
-    dkeys = {'mcpas': 0, 'vdjdb': 1}
-    directory = os.fsencode(dir)
-    aucs = []
-    for file in os.listdir(directory):
-        filename = os.fsdecode(file)
-        name = filename.split('_')
-        mkey = name[0]
-        dkey = name[1]
-        mis = int(name[-1])
-        iter = int(name[-2])
-        #if mkey == 'lstm' and dkey == 'vdjdb' and mis > 27:
-        #    continue
-        auc = max_auc(dir + '/' + filename)
-        aucs.append((mkeys[mkey], dkeys[dkey], iter, mis, auc))
-    # we do this because the runs might not be done yet
-    max_index0 = max(t[3] for t in aucs if t[0] == 0)
-    max_index10 = max(t[3] for t in aucs if t[0] == 1 and t[1] == 0)
-    # max_index11 = max(t[3] for t in aucs if t[0] == 1 and t[1] == 1)
-    #max_index11 = 27
-    max_index = max(max_index0, max_index10, max_index11)
-    max_iter0 = max(t[2] for t in aucs if t[0] == 0)
-    max_iter10 = max(t[2] for t in aucs if t[0] == 1 and t[1] == 0)
-    max_iter11 = max(t[2] for t in aucs if t[0] == 1 and t[1] == 1)
-    max_iter = max(max_iter0, max_iter10, max_iter11)
-    auc_tensor = np.zeros((2, 2, max_iter + 1, max_index + 1))
-    for auc in aucs:
-        auc_tensor[auc[0], auc[1], auc[2], auc[3]] = auc[4]
-    auc_tensor0 = auc_tensor[0, :, :max_iter0 + 1, :max_index0 + 1]
-    # print('auc tensor 0')
-    # print(auc_tensor0)
-    auc_tensor10 = auc_tensor[1, 0, :max_iter10 + 1, :max_index10 + 1]
-    # print('auc tensor 10')
-    # print(auc_tensor10)
-    auc_tensor11 = auc_tensor[1, 1, :max_iter11 + 1, :max_index11 + 1]
-    # print('auc tensor 11')
-    # print(auc_tensor11)
-    means0 = np.mean(auc_tensor0, axis=1)
-    std0 = stats.sem(auc_tensor0, axis=1)
-    means10 = np.mean(auc_tensor10, axis=0)
-    std10 = stats.sem(auc_tensor10, axis=0)
-    means11 = np.mean(auc_tensor11, axis=0)
-    std11 = stats.sem(auc_tensor11, axis=0)
-    auc_means = [means0[0], means0[1], means10, means11]
-    # print(auc_means)
-    auc_stds = [std0[0], std0[1], std10, std11]
-    labels = ['MsPAS, AE model', 'VDJdb, AE model', 'MsPAS, LSTM model', 'VDJdb, LSTM model']
-    colors = ['dodgerblue', 'springgreen', 'dodgerblue', 'springgreen']
-    styles = ['-', '-', '--', '--']
-    for auc_mean, auc_std, label, color, style in zip(auc_means, auc_stds, labels, colors, styles):
-        plt.errorbar(range(1, len(auc_mean) + 1), auc_mean, yerr=auc_std, label=label,
-                    color=color, linestyle=style)
-    plt.legend(loc=4, prop={'size': 8})
-    #plt.set_xlabel('Missing amino acid index', fontdict={'fontsize': 11}, labelpad=1)
-    #ax.set_ylabel('Best AUC score', fontdict={'fontsize': 14})
-    #ax.set_title(title, fontdict={'fontsize': 16})
-    plt.show()
-
-
 def mis_pos():
     dir = 'mis_pos/mis_pos_auc'
     mkeys = {'ae': 0, 'lstm': 1}
@@ -223,9 +162,6 @@ def mis_pos():
     auc_std = ma.std(auc_tensor, axis=2)
     auc_means = auc_mean.reshape((2 * 2, -1))
     auc_stds = auc_std.reshape((2 * 2, -1))
-    print(auc_means)
-    print(auc_stds)
-
     labels = ['MsPAS, AE model', 'VDJdb, AE model', 'MsPAS, LSTM model', 'VDJdb, LSTM model']
     colors = ['dodgerblue', 'springgreen', 'dodgerblue', 'springgreen']
     styles = ['-', '-', '--', '--']
@@ -238,7 +174,43 @@ def mis_pos():
     plt.title('TPP AUC per missing amino-acid')
     plt.show()
 
-# copy some older code
+
+def sub_auc():
+    dir = 'subsample/subsample_auc'
+    mkeys = {'ae': 0, 'lstm': 1}
+    dkeys = {'mcpas': 0, 'vdjdb': 1}
+    directory = os.fsencode(dir)
+    aucs = []
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        name = filename.split('_')
+        mkey = name[0]
+        dkey = name[1]
+        sub = int(name[-1])
+        iter = int(name[-2]) - 1
+        auc = max_auc(dir + '/' + filename)
+        aucs.append((mkeys[mkey], dkeys[dkey], iter, sub, auc))
+    max_index = 21
+    max_iter = 5
+    auc_tensor = np.zeros((2, 2, max_iter, max_index + 1))
+    for auc in aucs:
+        auc_tensor[auc[0], auc[1], auc[2], auc[3]] = auc[4]
+    auc_tensor = ma.array(auc_tensor, mask=auc_tensor == 0)
+    auc_mean = ma.mean(auc_tensor, axis=2)
+    auc_std = ma.std(auc_tensor, axis=2)
+    auc_means = auc_mean.reshape((2 * 2, -1))
+    auc_stds = auc_std.reshape((2 * 2, -1))
+    labels = ['MsPAS, AE model', 'VDJdb, AE model', 'MsPAS, LSTM model', 'VDJdb, LSTM model']
+    colors = ['dodgerblue', 'springgreen', 'dodgerblue', 'springgreen']
+    styles = ['-', '-', '--', '--']
+    for auc_mean, auc_std, label, color, style in zip(auc_means, auc_stds, labels, colors, styles):
+        plt.errorbar(range(1, len(auc_mean) + 1), auc_mean, yerr=auc_std, label=label,
+                     color=color, linestyle=style)
+    plt.legend(loc=4, prop={'size': 8})
+    plt.xlabel('Number of samples * 10000')
+    plt.ylabel('Mean AUC score')
+    plt.title('TPP AUC per number of sub-samples')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -281,6 +253,7 @@ if __name__ == '__main__':
     elif args.function == 'ttp':
         ttp_roc(args)
     elif args.function == 'mis_pos':
-        # position_auc()
         mis_pos()
-        pass
+    elif args.function == 'sub':
+        sub_auc()
+
