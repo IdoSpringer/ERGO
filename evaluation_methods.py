@@ -171,9 +171,16 @@ def multi_peptide_score(args, model, test_data, new_tcrs, number_of_peps):
     # print(most_freq)
     score_matrix = np.zeros((len(tcrs), number_of_peps))
     for i in range(number_of_peps):
-        # predict all new test TCRs with peps 1...k
-        tcrs, _, scores = predict(args, model, tcrs, [most_freq[i]] * len(tcrs))
-        score_matrix[:, i] = scores
+        try:
+            # predict all new test TCRs with peps 1...k
+            tcrs, _, scores = predict(args, model, tcrs, [most_freq[i]] * len(tcrs))
+            score_matrix[:, i] = scores
+        except ValueError:
+            pass
+        except IndexError:
+            pass
+        except TypeError:
+            pass
     # true peptide targets indexes
     true_pred = list(map(lambda pep: most_freq.index(pep) if pep in most_freq else number_of_peps + 1, targets))
     accs = []
@@ -290,4 +297,3 @@ if __name__ == '__main__':
 
 
 # python evaluation_methods.py load lstm mcpas specific cuda:1 --model_file=auto --train_data_file=auto --test_data_file=auto
-

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import evaluation_methods as eval
 import argparse
 import os
+import ergo_data_loader
 from scipy import stats
 
 
@@ -41,7 +42,7 @@ def spb_auc(args, peps):
 
 # todo nice and coherent colors
 
-
+# do not use it
 def acc_plot():
     # plot errorbar of accuracy per number of classes
     # currently we only take reported results
@@ -81,6 +82,43 @@ def acc_plot():
     plt.errorbar(classes, ae_vdjdb_means, yerr=ae_vdjdb_std, label='AE, VDJdb', color='tomato', linestyle='-')
     plt.errorbar(classes, lstm_mcpas_means, yerr=lstm_mcpas_std, label='LSTM, McPAS', color='royalblue', linestyle='--')
     plt.errorbar(classes, lstm_vdjdb_means, yerr=lstm_vdjdb_std, label='LSTM, VDJdb', color='tomato', linestyle='--')
+    plt.legend()
+    plt.title('MPS Accuracy per number of classes')
+    plt.xlabel('Number of classes')
+    plt.xticks(classes)
+    plt.ylabel('Mean accuracy')
+    plt.show()
+
+
+def mps_acc(args):
+    dir = 'final_results'
+    mkeys = {'ae': 0, 'lstm': 1}
+    dkeys = {'mcpas': 0, 'vdjdb': 1}
+    num_classes = 10
+    iterations = 5
+    acc_matrix = np.zeros((2, 2, num_classes - 1, iterations))
+    for model_type in mkeys.keys():
+        args.model_type = model_type
+        for dataset in dkeys.keys():
+            args.dataset = dataset
+            for iter in range(1, iterations + 1):
+                args.model_file = dir + '/' + '_'.join([model_type, dataset + str(iter) + '.pt'])
+                args.train_data_file = dir + '/' + '_'.join([model_type, dataset, 'train' + str(iter) + '.pickle'])
+                args.test_data_file = dir + '/' + '_'.join([model_type, dataset, 'test' + str(iter) + '.pickle'])
+                model, data = eval.load_model_and_data(args)
+                train_data, test_data = data
+                new_test_tcrs, new_test_peps = eval.extract_new_tcrs_and_peps(train_data, test_data)
+                _, accs = eval.multi_peptide_score(args, model, test_data, new_test_tcrs, num_classes)
+                print(accs)
+                acc_matrix[mkeys[model_type], dkeys[dataset], :, iter - 1] = accs
+    print(acc_matrix)
+    mean = np.mean(acc_matrix, axis=3)
+    std = np.std(acc_matrix, axis=3)
+    classes = range(2, num_classes + 1)
+    plt.errorbar(classes, mean[0, 0], yerr=std[0, 0], label='AE, McPAS', color='royalblue', linestyle='-')
+    plt.errorbar(classes, mean[0, 1], yerr=std[0, 0], label='AE, VDJdb', color='tomato', linestyle='-')
+    plt.errorbar(classes, mean[1, 0], yerr=std[1, 0], label='LSTM, McPAS', color='royalblue', linestyle='--')
+    plt.errorbar(classes, mean[1, 1], yerr=std[1, 1], label='LSTM, VDJdb', color='tomato', linestyle='--')
     plt.legend()
     plt.title('MPS Accuracy per number of classes')
     plt.xlabel('Number of classes')
@@ -207,9 +245,37 @@ def sub_auc():
         plt.errorbar(range(1, len(auc_mean) + 1), auc_mean, yerr=auc_std, label=label,
                      color=color, linestyle=style)
     plt.legend(loc=4, prop={'size': 8})
-    plt.xlabel('Number of samples * 10000')
+    plt.xlabel('Number of samples / 10000')
     plt.ylabel('Mean AUC score')
     plt.title('TPP AUC per number of sub-samples')
+    plt.show()
+
+
+def tcr_per_pep_dist():
+    mcpas_pairs, _, _ = ergo_data_loader.read_data('data/McPAS-TCR.csv', 'mcpas')
+    vdjdb_pairs, _, _ = ergo_data_loader.read_data('data/VDJDB_complete.tsv', 'vdjdb')
+    pep_tcr1 = {}
+    for tcr, pep in mcpas_pairs:
+        try:
+            pep_tcr1[pep[0]] += 1
+        except KeyError:
+            pep_tcr1[pep[0]] = 1
+    tcr_nums1 = sorted([pep_tcr1[pep] for pep in pep_tcr1], reverse=True)
+    pep_tcr2 = {}
+    for tcr, pep in vdjdb_pairs:
+        try:
+            pep_tcr2[pep[0]] += 1
+        except KeyError:
+            pep_tcr2[pep[0]] = 1
+    tcr_nums2 = sorted([pep_tcr2[pep] for pep in pep_tcr2], reverse=True)
+    plt.plot(range(len(tcr_nums1)), np.log(np.array(tcr_nums1)),
+           color='orchid', label='McPAS')
+    plt.plot(range(len(tcr_nums2)), np.log(np.array(tcr_nums2)),
+           color='springgreen', label='VDJdb')
+    plt.ylabel('Log TCRs per peptide')
+    plt.xlabel('Peptide index')
+    plt.title('Number of TCR per peptide')
+    plt.legend()
     plt.show()
 
 
@@ -237,6 +303,8 @@ if __name__ == '__main__':
 
     if args.function == 'acc':
         acc_plot()
+    elif args.function == 'mps':
+        mps_acc(args)
     elif args.function == 'spb_roc':
         peptides = ['GLCTLVAML', 'NLVPMVATV', 'GILGFVFTL']
         spb_roc(args, peptides)
@@ -256,4 +324,6 @@ if __name__ == '__main__':
         mis_pos()
     elif args.function == 'sub':
         sub_auc()
+    elif args.function == 'dist':
+        tcr_per_pep_dist()
 

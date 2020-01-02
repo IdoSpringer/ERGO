@@ -74,3 +74,5 @@ if __name__ == '__main__':
     elif args.function == 'sample':
         sample_data(args)
 
+
+# nohup python subsample/subsample_scheduler.py train ae mcpas specific 1

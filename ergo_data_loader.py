@@ -194,12 +194,23 @@ def get_examples(pairs_file, key, sampling, _protein=False, _hla=False):
 
 
 def load_data(pairs_file, key, sampling, _protein=False, _hla=False):
-    train_pos, train_neg, test_pos, test_neg = get_examples(pairs_file, key, sampling, _protein=_protein, _hla=_hla)
-    train = train_pos + train_neg
-    random.shuffle(train)
-    test = test_pos + test_neg
-    random.shuffle(test)
-    return train, test
+    if key in ['mcpas', 'vdjdb']:
+        train_pos, train_neg, test_pos, test_neg = get_examples(pairs_file, key, sampling, _protein=_protein, _hla=_hla)
+        train = train_pos + train_neg
+        random.shuffle(train)
+        test = test_pos + test_neg
+        random.shuffle(test)
+        return train, test
+    elif key == 'united':
+        mcpas_train_pos, mcpas_train_neg, mcpas_test_pos, mcpas_test_neg = \
+            get_examples(pairs_file['mcpas'], 'mcpas', sampling, _protein=_protein, _hla=_hla)
+        vdjdb_train_pos, vdjdb_train_neg, vdjdb_test_pos, vdjdb_test_neg = \
+            get_examples(pairs_file['vdjdb'], 'vdjdb', sampling, _protein=_protein, _hla=_hla)
+        train = mcpas_train_pos + mcpas_train_neg + vdjdb_train_pos + vdjdb_train_neg
+        random.shuffle(train)
+        test = mcpas_test_pos + mcpas_test_neg + vdjdb_test_pos + vdjdb_test_neg
+        random.shuffle(test)
+        return train, test
 
 
 def check(file, key, sampling, _protein, _hla):

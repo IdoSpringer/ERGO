@@ -3,8 +3,7 @@ import nni
 import torch
 import pickle
 import argparse
-import ae_nni as ae
-import lstm_nni as lstm
+from NNI import lstm_nni as lstm, ae_nni as ae
 import ergo_data_loader
 import numpy as np
 from ERGO_models import AutoencoderLSTMClassifier, DoubleLSTMClassifier

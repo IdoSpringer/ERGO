@@ -71,3 +71,4 @@ if __name__ == '__main__':
     elif args.function == 'sample':
         sample_data(args)
 
+# nohup python mis_pos/mis_pos_scheduler.py train ae mcpas specific 3

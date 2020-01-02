@@ -90,6 +90,8 @@ def main(args):
         datafile = r'data/McPAS-TCR.csv'
     if args.dataset == 'vdjdb':
         datafile = r'data/VDJDB_complete.tsv'
+    if args.dataset == 'united':
+        datafile = {'mcpas': r'data/McPAS-TCR.csv', 'vdjdb': r'data/VDJDB_complete.tsv'}
     train, test = ergo_data_loader.load_data(datafile, args.dataset, args.sampling,
                                              _protein=args.protein, _hla=args.hla)
     # Save train
@@ -103,7 +105,7 @@ def main(args):
 
     # Save test
     if args.test_data_file == 'auto':
-        dir = 'save_results'
+        dir = 'final_results'
         p_key = 'protein' if args.protein else ''
         args.test_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'test'])
     if args.test_data_file:
@@ -135,7 +137,7 @@ def main(args):
 
     # Save trained model
     if args.model_file == 'auto':
-        dir = 'save_results'
+        dir = 'final_results'
         p_key = 'protein' if args.protein else ''
         args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
     if args.model_file:
@@ -161,11 +163,11 @@ def pep_test(args):
     if args.ae_file == 'auto':
         args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.test_data_file == 'auto':
-        dir = 'save_results'
+        dir = 'final_results'
         p_key = 'protein' if args.protein else ''
         args.test_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'test.pickle'])
     if args.model_file == 'auto':
-        dir = 'save_results'
+        dir = 'final_results'
         p_key = 'protein' if args.protein else ''
         args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
 
@@ -253,11 +255,11 @@ def protein_test(args):
     if args.ae_file == 'auto':
         args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
     if args.test_data_file == 'auto':
-        dir = 'save_results'
+        dir = 'final_results'
         p_key = 'protein' if args.protein else ''
         args.test_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'test.pickle'])
     if args.model_file == 'auto':
-        dir = 'save_results'
+        dir = 'final_results'
         p_key = 'protein' if args.protein else ''
         args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset, args.sampling, p_key, 'model.pt'])
 
