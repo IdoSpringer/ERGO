@@ -27,7 +27,7 @@ def spb_auc(args, peps):
                 print('None')
             except IndexError:
                 print('None')
-    # print(aucs)
+    print(aucs)
     aucs = ma.array(aucs, mask=aucs == 0)
     # print(aucs)
     print(ma.mean(aucs, axis=1))
@@ -201,7 +201,7 @@ def mis_pos():
     auc_means = auc_mean.reshape((2 * 2, -1))
     auc_stds = auc_std.reshape((2 * 2, -1))
     labels = ['MsPAS, AE model', 'VDJdb, AE model', 'MsPAS, LSTM model', 'VDJdb, LSTM model']
-    colors = ['dodgerblue', 'springgreen', 'dodgerblue', 'springgreen']
+    colors = ['royalblue', 'tomato', 'royalblue', 'tomato']
     styles = ['-', '-', '--', '--']
     for auc_mean, auc_std, label, color, style in zip(auc_means, auc_stds, labels, colors, styles):
         plt.errorbar(range(1, len(auc_mean) + 1), auc_mean, yerr=auc_std, label=label,
@@ -239,7 +239,7 @@ def sub_auc():
     auc_means = auc_mean.reshape((2 * 2, -1))
     auc_stds = auc_std.reshape((2 * 2, -1))
     labels = ['MsPAS, AE model', 'VDJdb, AE model', 'MsPAS, LSTM model', 'VDJdb, LSTM model']
-    colors = ['dodgerblue', 'springgreen', 'dodgerblue', 'springgreen']
+    colors = ['royalblue', 'tomato', 'royalblue', 'tomato']
     styles = ['-', '-', '--', '--']
     for auc_mean, auc_std, label, color, style in zip(auc_means, auc_stds, labels, colors, styles):
         plt.errorbar(range(1, len(auc_mean) + 1), auc_mean, yerr=auc_std, label=label,
@@ -269,9 +269,9 @@ def tcr_per_pep_dist():
             pep_tcr2[pep[0]] = 1
     tcr_nums2 = sorted([pep_tcr2[pep] for pep in pep_tcr2], reverse=True)
     plt.plot(range(len(tcr_nums1)), np.log(np.array(tcr_nums1)),
-           color='orchid', label='McPAS')
+           color='royalblue', label='McPAS')
     plt.plot(range(len(tcr_nums2)), np.log(np.array(tcr_nums2)),
-           color='springgreen', label='VDJdb')
+           color='tomato', label='VDJdb')
     plt.ylabel('Log TCRs per peptide')
     plt.xlabel('Peptide index')
     plt.title('Number of TCR per peptide')

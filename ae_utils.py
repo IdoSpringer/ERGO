@@ -37,8 +37,11 @@ def pad_tcr(tcr, amino_to_ix, max_length):
     padding = torch.zeros(max_length, 20 + 1)
     tcr = tcr + 'X'
     for i in range(len(tcr)):
-        amino = tcr[i]
-        padding[i][amino_to_ix[amino]] = 1
+        try:
+            amino = tcr[i]
+            padding[i][amino_to_ix[amino]] = 1
+        except IndexError:
+            return padding
     return padding
 
 

@@ -69,6 +69,8 @@ def main(args):
     params['lr'] = 1e-4
     params['wd'] = 0
     params['epochs'] = 100
+    if args.dataset == 'tumor':
+        params['epochs'] = 25
     params['batch_size'] = 50
     params['lstm_dim'] = 500
     params['emb_dim'] = 10
@@ -92,6 +94,8 @@ def main(args):
         datafile = r'data/VDJDB_complete.tsv'
     if args.dataset == 'united':
         datafile = {'mcpas': r'data/McPAS-TCR.csv', 'vdjdb': r'data/VDJDB_complete.tsv'}
+    if args.dataset == 'tumor':
+        datafile = r'tumor/extended_cancer_pairs'
     train, test = ergo_data_loader.load_data(datafile, args.dataset, args.sampling,
                                              _protein=args.protein, _hla=args.hla)
     # Save train

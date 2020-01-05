@@ -14,6 +14,8 @@ def read_data(csv_file, file_key, _protein=False, _hla=False):
             reader = csv.reader(file)
         elif file_key == 'vdjdb':
             reader = csv.reader(file, delimiter='\t')
+        elif file_key == 'tumor':
+            reader = csv.reader(file, delimiter='\t')
         tcrs = set()
         peps = set()
         all_pairs = []
@@ -44,6 +46,8 @@ def read_data(csv_file, file_key, _protein=False, _hla=False):
                 tcr, pep = line[2], line[9]
                 if line[1] != 'TRB':
                     continue
+            elif file_key == 'tumor':
+                tcr, pep = line
             # Proper tcr and peptides
             if any(att == 'NA' or att == "" for att in [tcr, pep]):
                 continue
@@ -56,7 +60,7 @@ def read_data(csv_file, file_key, _protein=False, _hla=False):
             if _hla:
                 pep_data.append(hla)
             peps.add(tuple(pep_data))
-            all_pairs.append((tcr, pep_data))
+            all_pairs.append((tcr, tuple(pep_data)))
     train_pairs, test_pairs = train_test_split(all_pairs)
     return all_pairs, train_pairs, test_pairs
 
@@ -194,30 +198,44 @@ def get_examples(pairs_file, key, sampling, _protein=False, _hla=False):
 
 
 def load_data(pairs_file, key, sampling, _protein=False, _hla=False):
-    if key in ['mcpas', 'vdjdb']:
+    if key in ['mcpas', 'vdjdb', 'tumor']:
         train_pos, train_neg, test_pos, test_neg = get_examples(pairs_file, key, sampling, _protein=_protein, _hla=_hla)
-        train = train_pos + train_neg
-        random.shuffle(train)
-        test = test_pos + test_neg
-        random.shuffle(test)
-        return train, test
     elif key == 'united':
-        mcpas_train_pos, mcpas_train_neg, mcpas_test_pos, mcpas_test_neg = \
-            get_examples(pairs_file['mcpas'], 'mcpas', sampling, _protein=_protein, _hla=_hla)
-        vdjdb_train_pos, vdjdb_train_neg, vdjdb_test_pos, vdjdb_test_neg = \
-            get_examples(pairs_file['vdjdb'], 'vdjdb', sampling, _protein=_protein, _hla=_hla)
-        train = mcpas_train_pos + mcpas_train_neg + vdjdb_train_pos + vdjdb_train_neg
-        random.shuffle(train)
-        test = mcpas_test_pos + mcpas_test_neg + vdjdb_test_pos + vdjdb_test_neg
-        random.shuffle(test)
-        return train, test
+        mcpas_all_pairs, _, _ = read_data(pairs_file['mcpas'], 'mcpas', _protein=_protein, _hla=_hla)
+        vdjdb_all_pairs, _, _ = read_data(pairs_file['vdjdb'], 'vdjdb', _protein=_protein, _hla=_hla)
+        print(mcpas_all_pairs + vdjdb_all_pairs)
+        all_pairs = list(set(mcpas_all_pairs + vdjdb_all_pairs))
+        # split union to train/test
+        train_pairs, test_pairs = train_test_split(all_pairs)
+        train_pos = positive_examples(train_pairs)
+        test_pos = positive_examples(test_pairs)
+        if sampling == 'specific':
+            train_neg = negative_examples(train_pairs, all_pairs, 5 * len(train_pos), _protein=_protein)
+            test_neg = negative_examples(test_pairs, all_pairs, 5 * len(test_pos), _protein=_protein)
+    train = train_pos + train_neg
+    random.shuffle(train)
+    test = test_pos + test_neg
+    random.shuffle(test)
+    return train, test
+    # This - won't work, because mcpas/vdjdb are NOT distinct
+    # mcpas_train_pos, mcpas_train_neg, mcpas_test_pos, mcpas_test_neg = \
+    #     get_examples(pairs_file['mcpas'], 'mcpas', sampling, _protein=_protein, _hla=_hla)
+    # vdjdb_train_pos, vdjdb_train_neg, vdjdb_test_pos, vdjdb_test_neg = \
+    #     get_examples(pairs_file['vdjdb'], 'vdjdb', sampling, _protein=_protein, _hla=_hla)
+    # train = mcpas_train_pos + mcpas_train_neg + vdjdb_train_pos + vdjdb_train_neg
+    # random.shuffle(train)
+    # test = mcpas_test_pos + mcpas_test_neg + vdjdb_test_pos + vdjdb_test_neg
+    # random.shuffle(test)
 
 
-def check(file, key, sampling, _protein, _hla):
-    train, test = load_data(file, key, sampling, _protein, _hla)
+def check(file, key, sampling):
+    train, test = load_data(file, key, sampling)
     print(train)
     print(test)
     print(len(train))
     print(len(test))
 
-# check()
+
+# check('tumor/extended_cancer_pairs', 'tumor', 'specific')
+# datafile = {'mcpas': r'data/McPAS-TCR.csv', 'vdjdb': r'data/VDJDB_complete.tsv'}
+# check(datafile, 'united', 'specific')

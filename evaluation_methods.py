@@ -120,6 +120,9 @@ def extract_new_tcrs_and_peps(train_data, test_data):
     new_test_peps = set(test_peps).difference(set(train_peps))
     # print(len(new_test_tcrs), len(set(test_tcrs)))
     # print(len(new_test_peps), len(set(test_peps)), len(set(train_peps)))
+    print('test data', len(test_data))
+    print('new test tcrs', len(new_test_tcrs))
+    print('new test peps', len(new_test_peps))
     return new_test_tcrs, new_test_peps
 
 
