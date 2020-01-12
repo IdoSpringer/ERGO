@@ -8,6 +8,7 @@ import ergo_data_loader
 from scipy import stats
 from sklearn.metrics import roc_auc_score
 
+
 # Table 1 - SPB
 def spb_auc(args, peps):
     dir = 'final_results'
@@ -21,6 +22,32 @@ def spb_auc(args, peps):
         for k, pep in enumerate(peps):
             try:
                 auc = eval.single_peptide_score(args, model, test_data, pep, None)[0]
+                # print(pep, auc)
+                aucs[k, i - 1] = auc
+            except ValueError:
+                print('None')
+            except IndexError:
+                print('None')
+    print(aucs)
+    aucs = ma.array(aucs, mask=aucs == 0)
+    # print(aucs)
+    print(ma.mean(aucs, axis=1))
+
+
+def protein_auc(args):
+    dir = 'final_results'
+    protein_peps = eval.protein_pep_dict(args)
+    proteins = eval.freq_proteins(args, 5)[0]
+    aucs = np.zeros((len(proteins), 5))
+    for i in range(1, 5 + 1):
+        args.model_file = dir + '/' + '_'.join([args.model_type, args.dataset + str(i) + '.pt'])
+        args.train_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, 'train' + str(i) + '.pickle'])
+        args.test_data_file = dir + '/' + '_'.join([args.model_type, args.dataset, 'test' + str(i) + '.pickle'])
+        model, data = eval.load_model_and_data(args)
+        train_data, test_data = data
+        for k, protein in enumerate(proteins):
+            try:
+                auc = eval.single_protein_score(args, model, test_data, protein, protein_peps)[0]
                 # print(pep, auc)
                 aucs[k, i - 1] = auc
             except ValueError:
@@ -96,7 +123,7 @@ def mps_acc(args):
     dkeys = {'mcpas': 0, 'vdjdb': 1}
     num_classes = 10
     iterations = 5
-    acc_matrix = np.zeros((2, 2, num_classes - 1, iterations))
+    acc_matrix = np.zeros((2, 2, num_classes - 1 + len([20, 30]), iterations))
     for model_type in mkeys.keys():
         args.model_type = model_type
         for dataset in dkeys.keys():
@@ -108,21 +135,27 @@ def mps_acc(args):
                 model, data = eval.load_model_and_data(args)
                 train_data, test_data = data
                 new_test_tcrs, new_test_peps = eval.extract_new_tcrs_and_peps(train_data, test_data)
-                _, accs = eval.multi_peptide_score(args, model, test_data, new_test_tcrs, num_classes)
+                _, accs = eval.multi_peptide_score(args, model, test_data, new_test_tcrs, 30)
                 print(accs)
-                acc_matrix[mkeys[model_type], dkeys[dataset], :, iter - 1] = accs
+                acc_matrix[mkeys[model_type], dkeys[dataset], :num_classes - 1, iter - 1] = accs[:num_classes - 1]
+                acc_matrix[mkeys[model_type], dkeys[dataset], -2, iter - 1] = accs[20 - 2]
+                acc_matrix[mkeys[model_type], dkeys[dataset], -1, iter - 1] = accs[-1]
     print(acc_matrix)
     mean = np.mean(acc_matrix, axis=3)
     std = np.std(acc_matrix, axis=3)
     classes = range(2, num_classes + 1)
-    plt.errorbar(classes, mean[0, 0], yerr=std[0, 0], label='AE, McPAS', color='royalblue', linestyle='-')
-    plt.errorbar(classes, mean[0, 1], yerr=std[0, 0], label='AE, VDJdb', color='tomato', linestyle='-')
-    plt.errorbar(classes, mean[1, 0], yerr=std[1, 0], label='LSTM, McPAS', color='royalblue', linestyle='--')
-    plt.errorbar(classes, mean[1, 1], yerr=std[1, 1], label='LSTM, VDJdb', color='tomato', linestyle='--')
+    plt.errorbar(classes, mean[0, 0, :num_classes - 1], yerr=std[0, 0, :num_classes - 1], label='AE, McPAS', color='royalblue', linestyle='-')
+    plt.errorbar([num_classes+1,num_classes+2], mean[0, 0, -2:], yerr=std[0, 0, -2:], color='royalblue', fmt='o')
+    plt.errorbar(classes, mean[0, 1, :num_classes - 1], yerr=std[0, 0, :num_classes - 1], label='AE, VDJdb', color='tomato', linestyle='-')
+    plt.errorbar([num_classes+1,num_classes+2], mean[0, 1, -2:], yerr=std[0, 1, -2:], color='tomato', fmt='o')
+    plt.errorbar(classes, mean[1, 0, :num_classes - 1], yerr=std[1, 0, :num_classes - 1], label='LSTM, McPAS', color='royalblue', linestyle='--')
+    plt.errorbar([num_classes+1,num_classes+2], mean[1, 0, -2:], yerr=std[1, 0, -2:], color='royalblue', fmt='o')
+    plt.errorbar(classes, mean[1, 1, :num_classes - 1], yerr=std[1, 1, :num_classes - 1], label='LSTM, VDJdb', color='tomato', linestyle='--')
+    plt.errorbar([num_classes+1,num_classes+2], mean[1, 1, -2:], yerr=std[1, 1, -2:], color='tomato', fmt='o')
     plt.legend()
     plt.title('MPS Accuracy per number of classes')
     plt.xlabel('Number of classes')
-    plt.xticks(classes)
+    plt.xticks(range(2, num_classes + 1 + 2), list(classes) + [20, 30])
     plt.ylabel('Mean accuracy')
     plt.show()
 
@@ -314,6 +347,8 @@ def num_tcrs_bins_auc(args):
                 for pep in pep_probs:
                     samples_count = len(pep_probs[pep])
                     bin = int(np.floor(np.log2(samples_count)))
+                    if bin >= 10:
+                        print(pep)
                     try:
                         bins[bin].extend(pep_probs[pep])
                     except KeyError:
@@ -328,11 +363,11 @@ def num_tcrs_bins_auc(args):
     print(bin_aucs)
     mean = np.mean(bin_aucs, axis=2)
     sem = stats.sem(bin_aucs, axis=2)
-    xbins = range(2, 13)
-    plt.errorbar(xbins, mean[0, 0][2:13], yerr=sem[0, 0][2:13], label='AE, McPAS', color='royalblue', linestyle='-')
-    plt.errorbar(xbins, mean[0, 1][2:13], yerr=sem[0, 0][2:13], label='AE, VDJdb', color='tomato', linestyle='-')
-    plt.errorbar(xbins, mean[1, 0][2:13], yerr=sem[1, 0][2:13], label='LSTM, McPAS', color='royalblue', linestyle='--')
-    plt.errorbar(xbins, mean[1, 1][2:13], yerr=sem[1, 1][2:13], label='LSTM, VDJdb', color='tomato', linestyle='--')
+    xbins = range(2, 11)
+    plt.errorbar(xbins[:-1], mean[0, 0][2:10], yerr=sem[0, 0][2:10], label='AE, McPAS', color='royalblue', linestyle='-')
+    plt.errorbar(xbins, mean[0, 1][2:11], yerr=sem[0, 0][2:11], label='AE, VDJdb', color='tomato', linestyle='-')
+    plt.errorbar(xbins[:-1], mean[1, 0][2:10], yerr=sem[1, 0][2:10], label='LSTM, McPAS', color='royalblue', linestyle='--')
+    plt.errorbar(xbins, mean[1, 1][2:11], yerr=sem[1, 1][2:11], label='LSTM, VDJdb', color='tomato', linestyle='--')
     plt.legend()
     plt.title('AUC per number of TCRs per peptide')
     plt.xlabel('Number of TCRs per peptide')
@@ -371,8 +406,14 @@ if __name__ == '__main__':
         peptides = ['GLCTLVAML', 'NLVPMVATV', 'GILGFVFTL']
         spb_roc(args, peptides)
     elif args.function == 'spb_auc':
+        print('Dash peptides')
         peptides = ['GLCTLVAML', 'NLVPMVATV', 'GILGFVFTL']
         spb_auc(args, peptides)
+        print('20 Frequent peptides')
+        freq = eval.freq_proteins(args, 5)[2]
+        print(freq)
+        spb_auc(args, freq)
+        '''
         vdjdb_peps = ["IPSINVHHY", "TPRVTGGGAM", "NLVPMVATV", "GLCTLVAML", "RAKFKQLL",
                       "YVLDHLIVV", "GILGFVFTL", "PKYVKQNTLKLAT", "CINGVCWTV", "KLVALGINAV",
                       "ATDALMTGY", "RPRGEVRFL", "LLWNGPMAV", "GTSGSPIVNR", "GTSGSPIINR",
@@ -380,6 +421,7 @@ if __name__ == '__main__':
                       "GPGHKARVL", "FLKEKGGL"]
         if args.dataset == 'vdjdb':
             spb_auc(args, vdjdb_peps)
+        '''
     elif args.function == 'ttp':
         ttp_roc(args)
     elif args.function == 'mis_pos':
@@ -390,4 +432,7 @@ if __name__ == '__main__':
         tcr_per_pep_dist()
     elif args.function == 'tcr_count_auc':
         num_tcrs_bins_auc(args)
+    elif args.function == 'protein':
+        protein_auc(args)
+
 

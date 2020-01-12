@@ -120,9 +120,9 @@ def extract_new_tcrs_and_peps(train_data, test_data):
     new_test_peps = set(test_peps).difference(set(train_peps))
     # print(len(new_test_tcrs), len(set(test_tcrs)))
     # print(len(new_test_peps), len(set(test_peps)), len(set(train_peps)))
-    print('test data', len(test_data))
-    print('new test tcrs', len(new_test_tcrs))
-    print('new test peps', len(new_test_peps))
+    # print('test data', len(test_data))
+    # print('new test tcrs', len(new_test_tcrs))
+    # print('new test peps', len(new_test_peps))
     return new_test_tcrs, new_test_peps
 
 
@@ -136,6 +136,133 @@ def single_peptide_score(args, model, test_data, pep, neg_type=None):
     signs_to_prob = {'n': 0.0, 'p': 1.0}
     signs = [signs_to_prob[p[2]] for p in test_data if p[1][0] == pep]
     peps = [pep] * len(tcrs)
+
+    # todo find a way to global it
+    # Word to index dictionary
+    amino_acids = [letter for letter in 'ARNDCEQGHILKMFPSTWYV']
+    if args.model_type == 'lstm':
+        amino_to_ix = {amino: index for index, amino in enumerate(['PAD'] + amino_acids)}
+    if args.model_type == 'ae':
+        pep_atox = {amino: index for index, amino in enumerate(['PAD'] + amino_acids)}
+        tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
+    max_len = 28
+    batch_size = 50
+
+    if args.model_type == 'ae':
+        test_batches = ae.get_full_batches(tcrs, peps, signs, tcr_atox, pep_atox, batch_size, max_len)
+        test_auc, roc = ae.evaluate_full(model, test_batches, args.device)
+    if args.model_type == 'lstm':
+        lstm.convert_data(tcrs, peps, amino_to_ix)
+        test_batches = lstm.get_full_batches(tcrs, peps, signs, batch_size, amino_to_ix)
+        test_auc, roc = lstm.evaluate_full(model, test_batches, args.device)
+    return test_auc, roc
+
+
+def protein_pep_dict(args):
+    if args.dataset == 'mcpas':
+        datafile = r'data/McPAS-TCR.csv'
+    elif args.dataset == 'vdjdb':
+        datafile = r'data/VDJDB_complete.tsv'
+    protein_peps = {}
+    with open(datafile, 'r', encoding='unicode_escape') as file:
+        file.readline()
+        if args.dataset == 'mcpas':
+            reader = csv.reader(file)
+        elif args.dataset == 'vdjdb':
+            reader = csv.reader(file, delimiter='\t')
+        for line in reader:
+            if args.dataset == 'mcpas':
+                pep, protein = line[11], line[9]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            elif args.dataset == 'vdjdb':
+                pep, protein = line[9], line[10]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            try:
+                protein_peps[protein].append(pep)
+            except KeyError:
+                protein_peps[protein] = [pep]
+    return protein_peps
+
+
+def freq_proteins(args, k):
+    if args.dataset == 'mcpas':
+        datafile = r'data/McPAS-TCR.csv'
+    elif args.dataset == 'vdjdb':
+        datafile = r'data/VDJDB_complete.tsv'
+    proteins = {}
+    peptides = {}
+    with open(datafile, 'r', encoding='unicode_escape') as file:
+        file.readline()
+        if args.dataset == 'mcpas':
+            reader = csv.reader(file)
+        elif args.dataset == 'vdjdb':
+            reader = csv.reader(file, delimiter='\t')
+        for line in reader:
+            if args.dataset == 'mcpas':
+                pep, protein = line[11], line[9]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            elif args.dataset == 'vdjdb':
+                pep, protein = line[9], line[10]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            try:
+                proteins[protein] += 1
+            except KeyError:
+                proteins[protein] = 1
+            try:
+                peptides[pep] += 1
+            except KeyError:
+                peptides[pep] = 1
+    freq_proteins = sorted(proteins, key=lambda x: proteins[x], reverse=True)
+    freq_peps = sorted(peptides, key=lambda x: peptides[x], reverse=True)
+    counting = {k: v for k, v in sorted(peptides.items(), key=lambda item: item[1], reverse=True)}
+    print(freq_proteins[:k], freq_peps[:k])
+    return freq_proteins[:k], freq_peps[:k], [p for p in counting if counting[p] > 50]
+
+'''
+def freq_proteins(args, k):
+    if args.dataset == 'mcpas':
+        datafile = r'data/McPAS-TCR.csv'
+    elif args.dataset == 'vdjdb':
+        datafile = r'data/VDJDB_complete.tsv'
+    proteins = {}
+    with open(datafile, 'r', encoding='unicode_escape') as file:
+        file.readline()
+        if args.dataset == 'mcpas':
+            reader = csv.reader(file)
+        elif args.dataset == 'vdjdb':
+            reader = csv.reader(file, delimiter='\t')
+        for line in reader:
+            if args.dataset == 'mcpas':
+                pep, protein = line[11], line[9]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            elif args.dataset == 'vdjdb':
+                pep, protein = line[9], line[10]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            try:
+                proteins[protein] += 1
+            except KeyError:
+                proteins[protein] = 1
+    freq = sorted(proteins, key=lambda x: proteins[x], reverse=True)
+    print(freq[:k])
+    return freq[:k]
+'''
+
+
+def single_protein_score(args, model, test_data, protein, protein_peps):
+    # positive examples - tcr in test that bind a pep belongs to the protein
+    # negative examples - tcr in test that do not bind a pep belongs to the protein
+
+    # Get pep-relevant data
+    tcrs = [p[0] for p in test_data if p[1][0] in protein_peps[protein]]
+    signs_to_prob = {'n': 0.0, 'p': 1.0}
+    signs = [signs_to_prob[p[2]] for p in test_data if p[1][0] in protein_peps[protein]]
+    peps = [p[1][0] for p in test_data if p[1][0] in protein_peps[protein]]
 
     # todo find a way to global it
     # Word to index dictionary
