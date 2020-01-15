@@ -7,7 +7,7 @@ import os
 import ergo_data_loader
 from scipy import stats
 from sklearn.metrics import roc_auc_score
-
+import csv
 
 # Table 1 - SPB
 def spb_auc(args, peps):
@@ -67,7 +67,6 @@ def protein_auc(args):
 # D. SPB ROC curve
 # E. TPP ROC curve
 
-# todo nice and coherent colors
 
 # do not use it
 def acc_plot():
@@ -375,6 +374,124 @@ def num_tcrs_bins_auc(args):
     plt.ylabel('Mean AUC')
     plt.show()
 
+# Supp mat
+
+
+def count_data_sizes():
+    dir = 'final_results'
+    mkeys = {'ae': 0, 'lstm': 1}
+    dkeys = {'mcpas': 0, 'vdjdb': 1}
+    iterations = 5
+    all_pairs = np.zeros((2, 2, 2, iterations))
+    pos_pairs = np.zeros((2, 2, 2, iterations))
+    neg_pairs = np.zeros((2, 2, 2, iterations))
+    new_test_tcrs = np.zeros((2, 2, 2, iterations))
+    new_test_peps = np.zeros((2, 2, 2, iterations))
+    for model_type in mkeys.keys():
+        args.model_type = model_type
+        for dataset in dkeys.keys():
+            args.dataset = dataset
+            for iter in range(1, iterations + 1):
+                args.model_file = dir + '/' + '_'.join([model_type, dataset + str(iter) + '.pt'])
+                args.train_data_file = dir + '/' + '_'.join([model_type, dataset, 'train' + str(iter) + '.pickle'])
+                args.test_data_file = dir + '/' + '_'.join([model_type, dataset, 'test' + str(iter) + '.pickle'])
+                model, data = eval.load_model_and_data(args)
+                train_data, test_data = data
+                new_test_tcr_list, new_test_pep_list = eval.extract_new_tcrs_and_peps(train_data, test_data)
+                all_pairs[dkeys[dataset], mkeys[model_type], 0, iter - 1] = len(train_data)
+                all_pairs[dkeys[dataset], mkeys[model_type], 1, iter - 1] = len(test_data)
+                train_pos = [t for t in train_data if t[2] == 'p']
+                train_neg = [t for t in train_data if t[2] == 'n']
+                test_pos = [t for t in test_data if t[2] == 'p']
+                test_neg = [t for t in test_data if t[2] == 'n']
+                pos_pairs[dkeys[dataset], mkeys[model_type], 0, iter - 1] = len(train_pos)
+                pos_pairs[dkeys[dataset], mkeys[model_type], 1, iter - 1] = len(test_pos)
+                neg_pairs[dkeys[dataset], mkeys[model_type], 0, iter - 1] = len(train_neg)
+                neg_pairs[dkeys[dataset], mkeys[model_type], 1, iter - 1] = len(test_neg)
+                assert pos_pairs[dkeys[dataset], mkeys[model_type], 0, iter - 1] +\
+                       neg_pairs[dkeys[dataset], mkeys[model_type], 0, iter - 1] ==\
+                       all_pairs[dkeys[dataset], mkeys[model_type], 0, iter - 1]
+                new_test_tcrs[dkeys[dataset], mkeys[model_type], 1, iter - 1] = len(new_test_tcr_list)
+                new_test_peps[dkeys[dataset], mkeys[model_type], 1, iter - 1] = len(new_test_pep_list)
+    for iter in range(iterations):
+        print('iteration:', iter + 1)
+        print('all pairs')
+        print("\t".join(all_pairs[:, :, :, iter].flatten().astype(int).astype(str).tolist()))
+        print('pos pairs')
+        print("\t".join(pos_pairs[:, :, :, iter].flatten().astype(int).astype(str).tolist()))
+        print('neg pairs')
+        print("\t".join(neg_pairs[:, :, :, iter].flatten().astype(int).astype(str).tolist()))
+        print('new test tcrs')
+        print("\t".join(new_test_tcrs[:, :, :, iter].flatten().astype(int).astype(str).tolist()))
+        print('new test peps')
+        print("\t".join(new_test_peps[:, :, :, iter].flatten().astype(int).astype(str).tolist()))
+    pass
+
+
+def mps_count(args):
+    if args.dataset == 'mcpas':
+        datafile = r'data/McPAS-TCR.csv'
+    elif args.dataset == 'vdjdb':
+        datafile = r'data/VDJDB_complete.tsv'
+    proteins = {}
+    peptides = {}
+    with open(datafile, 'r', encoding='unicode_escape') as file:
+        file.readline()
+        if args.dataset == 'mcpas':
+            reader = csv.reader(file)
+        elif args.dataset == 'vdjdb':
+            reader = csv.reader(file, delimiter='\t')
+        for line in reader:
+            if args.dataset == 'mcpas':
+                pep, protein = line[11], line[9]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            elif args.dataset == 'vdjdb':
+                pep, protein = line[9], line[10]
+                if protein == 'NA' or pep == 'NA':
+                    continue
+            try:
+                proteins[protein] += 1
+            except KeyError:
+                proteins[protein] = 1
+            try:
+                peptides[pep] += 1
+            except KeyError:
+                peptides[pep] = 1
+    freq_peps = sorted(peptides, key=lambda x: peptides[x], reverse=True)
+    counting = {k: v for k, v in sorted(peptides.items(), key=lambda item: item[1], reverse=True)}
+    j = 30
+    for pep in counting:
+        if j:
+            print(pep + '\t' + str(counting[pep]))
+            j -= 1
+        else:
+            break
+    # dir = 'final_results'
+    # mkeys = {'ae': 0, 'lstm': 1}
+    # dkeys = {'mcpas': 0, 'vdjdb': 1}
+    # num_classes = 10
+    # iterations = 5
+    # acc_matrix = np.zeros((2, 2, num_classes - 1 + len([20, 30]), iterations))
+    # for model_type in mkeys.keys():
+    #     args.model_type = model_type
+    #     for dataset in dkeys.keys():
+    #         args.dataset = dataset
+    #         for iter in range(1, iterations + 1):
+    #             args.model_file = dir + '/' + '_'.join([model_type, dataset + str(iter) + '.pt'])
+    #             args.train_data_file = dir + '/' + '_'.join([model_type, dataset, 'train' + str(iter) + '.pickle'])
+    #             args.test_data_file = dir + '/' + '_'.join([model_type, dataset, 'test' + str(iter) + '.pickle'])
+    #             model, data = eval.load_model_and_data(args)
+    #             train_data, test_data = data
+    #             new_test_tcrs, new_test_peps = eval.extract_new_tcrs_and_peps(train_data, test_data)
+    #             _, accs = eval.multi_peptide_score(args, model, test_data, new_test_tcrs, 30)
+    #             print(accs)
+    #             acc_matrix[mkeys[model_type], dkeys[dataset], :num_classes - 1, iter - 1] = accs[:num_classes - 1]
+    #             acc_matrix[mkeys[model_type], dkeys[dataset], -2, iter - 1] = accs[20 - 2]
+    #             acc_matrix[mkeys[model_type], dkeys[dataset], -1, iter - 1] = accs[-1]
+    # print(acc_matrix)
+    pass
+
 
 if __name__ == '__main__':
     dir = 'final_results'
@@ -434,5 +551,10 @@ if __name__ == '__main__':
         num_tcrs_bins_auc(args)
     elif args.function == 'protein':
         protein_auc(args)
+    elif args.function == 'count':
+        count_data_sizes()
+    elif args.function == 'mps_count':
+        mps_count(args)
+
 
 
