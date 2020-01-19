@@ -132,6 +132,8 @@ def train_epoch(batches, model, loss_function, optimizer, device):
         probs = model(padded_tcrs, tcr_lens, padded_peps, pep_lens)
         # print(probs, batch_signs)
         # Compute loss
+        weights = batch_signs * 0.84 + (1-batch_signs) * 0.14
+        loss_function.weight = weights
         loss = loss_function(probs, batch_signs)
         # with open(sys.argv[1], 'a+') as loss_file:
         #    loss_file.write(str(loss.item()) + '\n')
@@ -187,6 +189,9 @@ def train_model(batches, test_batches, device, args, params):
                 file.write(str(test_auc_c) + '\n')
         else:
             test_auc, roc = evaluate(model, test_batches, device)
+
+            # nni.report_intermediate_result(test_auc)
+
             if test_auc > best_auc:
                 best_auc = test_auc
                 best_roc = roc

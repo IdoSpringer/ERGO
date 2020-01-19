@@ -37,8 +37,11 @@ def pad_tcr(tcr, amino_to_ix, max_length):
     padding = torch.zeros(max_length, 20 + 1)
     tcr = tcr + 'X'
     for i in range(len(tcr)):
-        amino = tcr[i]
-        padding[i][amino_to_ix[amino]] = 1
+        try:
+            amino = tcr[i]
+            padding[i][amino_to_ix[amino]] = 1
+        except IndexError:
+            return padding
     return padding
 
 
@@ -192,6 +195,9 @@ def train_model(batches, test_batches, device, args, params):
         with open(args['train_auc_file'], 'a+') as file:
             file.write(str(train_auc) + '\n')
         test_auc, roc = evaluate(model, test_batches, device)
+
+        # nni.report_intermediate_result(test_auc)
+
         if test_auc > best_auc:
             best_auc = test_auc
             best_roc = roc
