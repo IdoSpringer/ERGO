@@ -137,7 +137,6 @@ def single_peptide_score(args, model, test_data, pep, neg_type=None):
     signs = [signs_to_prob[p[2]] for p in test_data if p[1][0] == pep]
     peps = [pep] * len(tcrs)
 
-    # todo find a way to global it
     # Word to index dictionary
     amino_acids = [letter for letter in 'ARNDCEQGHILKMFPSTWYV']
     if args.model_type == 'lstm':
@@ -264,7 +263,6 @@ def single_protein_score(args, model, test_data, protein, protein_peps):
     signs = [signs_to_prob[p[2]] for p in test_data if p[1][0] in protein_peps[protein]]
     peps = [p[1][0] for p in test_data if p[1][0] in protein_peps[protein]]
 
-    # todo find a way to global it
     # Word to index dictionary
     amino_acids = [letter for letter in 'ARNDCEQGHILKMFPSTWYV']
     if args.model_type == 'lstm':
@@ -372,7 +370,6 @@ def new_peps_score(args, model, test_data, new_tcrs, new_peps):
     signs = [signs_to_prob[p[2]] for p in test_data if p[0] in new_tcrs and p[1][0] in new_peps]
     return evaluate(args, model, tcrs, peps, signs)
 
-# todo fix code. remove repeating parts
 
 
 if __name__ == '__main__':
