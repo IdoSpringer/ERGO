@@ -371,7 +371,6 @@ def new_peps_score(args, model, test_data, new_tcrs, new_peps):
     return evaluate(args, model, tcrs, peps, signs)
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("function")

@@ -442,4 +442,5 @@ if __name__ == '__main__':
     elif args.function == 'predict':
         predict(args)
 
+# example
 #  python ERGO.py train lstm mcpas specific cuda:0 --model_file=model.pt --train_data_file=train_data --test_data_file=test_data
