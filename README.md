@@ -58,6 +58,6 @@ The trained autoencoder will be saved in `model_file` as a pytorch model.
 You can use the already trained `tcr_autoencoder.pt` model instead.
 
 ## References
-1. Springer, I., Besser, H., Tickotsky-Moskovitz, N., Dvorkin, S. & Louzoun, Y.
-Prediction of specific TCR-peptide binding from large dictionaries of TCR-peptide pairs.
-bioRxiv 650861 (2020). doi:10.1101/650861
+1. Springer I, Besser H, Tickotsky-Moskovitz N, Dvorkin S and Louzoun Y (2020)
+Prediction of Specific TCR-Peptide Binding From Large Dictionaries of TCR-Peptide Pairs.
+Front. Immunol. 11:1803. doi: 10.3389/fimmu.2020.01803
