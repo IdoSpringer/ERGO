@@ -358,8 +358,8 @@ def predict(args):
         pep_atox = {amino: index for index, amino in enumerate(['PAD'] + amino_acids)}
         tcr_atox = {amino: index for index, amino in enumerate(amino_acids + ['X'])}
 
-    if args.ae_file == 'auto':
-        args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_30.pt'
+    # if args.ae_file == 'auto':
+    args.ae_file = 'TCR_Autoencoder/tcr_ae_dim_100.pt'
     if args.model_file == 'auto':
         dir = 'models'
         p_key = 'protein' if args.protein else ''
@@ -387,13 +387,13 @@ def predict(args):
     # Load model
     device = args.device
     if args.model_type == 'ae':
-        model = AutoencoderLSTMClassifier(10, device, 28, 21, 30, 50, args.ae_file, False)
+        model = AutoencoderLSTMClassifier(10, device, 28, 21, 100, 50, args.ae_file, False)
         checkpoint = torch.load(args.model_file, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.to(device)
         model.eval()
     if args.model_type == 'lstm':
-        model = DoubleLSTMClassifier(10, 30, 0.1, device)
+        model = DoubleLSTMClassifier(10, 500, 0.1, device)
         checkpoint = torch.load(args.model_file, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.to(device)
