@@ -262,6 +262,7 @@ def evaluate_full(model, batches, device):
 def predict(model, batches, device):
     model.eval()
     preds = []
+    labels = []
     index = 0
     for batch in batches:
         padded_tcrs, tcr_lens, padded_peps, pep_lens, batch_signs = batch
@@ -272,13 +273,14 @@ def predict(model, batches, device):
         pep_lens = pep_lens.to(device)
         probs = model(padded_tcrs, tcr_lens, padded_peps, pep_lens)
         preds.extend([t[0] for t in probs.cpu().data.tolist()])
+        labels.extend(batch_signs)
         batch_size = len(tcr_lens)
         assert batch_size == 50
         index += batch_size
     border = pep_lens[-1]
-    if any(k != border for k in pep_lens[border:]):
-        print(pep_lens)
-    else:
-        index -= batch_size - border
-        preds = preds[:index]
-    return preds
+#     if any(k != border for k in pep_lens[border:]):
+#         print(pep_lens)
+#     else:
+#         index -= batch_size - border
+#         preds = preds[:index]
+    return preds, labels
